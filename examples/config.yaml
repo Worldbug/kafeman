@@ -1,0 +1,14 @@
+current_cluster: prod
+clusters:
+- name: prod
+  version: ""
+  brokers: 
+  -  prodbroker:9092
+  SASL: null
+  TLS: null
+  # proto type in kafka topic
+  protosheme: serice.Events
+
+# list of dirs with proto files
+protos:
+  - vendor.proto/
