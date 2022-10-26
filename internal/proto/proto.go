@@ -11,8 +11,6 @@ type ProtobufDecoder struct {
 	protosRegistry *DescriptorRegistry
 }
 
-// DecodeProto decode proto message
-// TODO: Переместить protoType в структурку
 func (pd *ProtobufDecoder) DecodeProto(data []byte, protoType string) ([]byte, error) {
 	messageContent, err := protoDecode(pd.protosRegistry, data, protoType)
 	if err != nil {

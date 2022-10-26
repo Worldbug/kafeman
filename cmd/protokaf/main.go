@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"gkat/internal/app"
 	"os"
+	"protokaf/internal/app"
 )
 
 func main() {
-	if err := app.Execute(); err != nil {
+	if err := app.App().Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

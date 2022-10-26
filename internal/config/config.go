@@ -1,39 +1,39 @@
 package config
 
-type SASL struct {
-	Mechanism    string `yaml:"mechanism"`
-	Username     string `yaml:"username"`
-	Password     string `yaml:"password"`
-	ClientID     string `yaml:"clientID"`
-	ClientSecret string `yaml:"clientSecret"`
-	TokenURL     string `yaml:"tokenURL"`
-	Token        string `yaml:"token"`
-}
+import (
+	"os"
 
-type TLS struct {
-	Cafile        string
-	Clientfile    string
-	Clientkeyfile string
-	Insecure      bool
-}
+	"gopkg.in/yaml.v2"
+)
 
-type Cluster struct {
-	Name              string
-	Version           string   `yaml:"version"`
-	Brokers           []string `yaml:"brokers"`
-	SASL              *SASL    `yaml:"SASL"`
-	TLS               *TLS     `yaml:"TLS"`
-	SecurityProtocol  string   `yaml:"security-protocol"`
-	SchemaRegistryURL string   `yaml:"schema-registry-url"`
-}
-
-// TODO: include
-type Protobuf struct {
-	VendoredProtos []string `yaml:"vendored_protos"`
-}
+const (
+	configLocation = "~/.protokaf/config.yml"
+)
 
 type Config struct {
-	CurrentCluster  string `yaml:"current-cluster"`
-	ClusterOverride string
-	Clusters        []*Cluster `yaml:"clusters"`
+	CurrentCluster string   `yaml:"current_cluster"`
+	Clusters       Clusters `yaml:"clusters"`
+}
+
+func LoadConfig(configPath string) (Config, error) {
+	cfg := Config{}
+
+	path := valueOrDefault(configPath, configLocation)
+	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		return cfg, err
+	}
+
+	decoder := yaml.NewDecoder(file)
+	err = decoder.Decode(&cfg)
+
+	return cfg, err
+}
+
+func valueOrDefault(val, def string) string {
+	if val != "" {
+		return val
+	}
+
+	return def
 }
