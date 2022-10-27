@@ -3,9 +3,11 @@ clusters:
 - name: prod
   brokers: 
   -  prodbroker:9092
-  proto_model: serice.Events
+  proto_type: serice.Events
 
 # list of dirs with proto files
 protobuf:
+  topics:
+    - processing-state-events: "pricemonitoring.processing_state.models.EventMessage"
   proto_paths:
   - vendor.proto/

@@ -5,11 +5,25 @@ import (
 	"io"
 	"os"
 
+	"protokaf/internal/config"
+	"protokaf/internal/proto"
+
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	var err error
+	conf, err = config.LoadConfig("")
+	if err != nil {
+		panic("Cant load config")
+	}
+}
+
 var (
+	conf           config.Config
+	currentCluster config.Cluster
+
 	outWriter io.Writer = os.Stdout
 	errWriter io.Writer = os.Stderr
 	inReader  io.Reader = os.Stdin
@@ -18,6 +32,8 @@ var (
 
 	commit  string = "HEAD"
 	version string = "latest"
+
+	protoRegistry *proto.DescriptorRegistry
 )
 
 var RootCMD = &cobra.Command{
@@ -33,4 +49,9 @@ var RootCMD = &cobra.Command{
 			colorableOut = outWriter
 		}
 	},
+}
+
+func errorExit(format string, a ...interface{}) {
+	fmt.Fprintf(errWriter, format+"\n", a...)
+	os.Exit(1)
 }
