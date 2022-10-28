@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"protokaf/internal/config"
-	"protokaf/internal/proto"
+	"kafeman/internal/config"
+	"kafeman/internal/proto"
 
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"
@@ -16,17 +16,12 @@ func init() {
 	var err error
 	conf, err = config.LoadConfig("")
 	if err != nil {
-		panic("Cant load config")
-	}
-
-	for _, v := range conf.Protobuf.ProtoPaths {
-		protoFiles = append(protoFiles, v)
+		// panic("Cant load config")
 	}
 }
 
 var (
 	conf config.Config
-	// currentCluster config.Cluster
 
 	outWriter io.Writer = os.Stdout
 	errWriter io.Writer = os.Stderr
@@ -41,7 +36,7 @@ var (
 )
 
 var RootCMD = &cobra.Command{
-	Use:     "protokaf",
+	Use:     "kafeman",
 	Short:   "Kafka Command Line utility",
 	Version: fmt.Sprintf("%s (%s)", version, commit),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {

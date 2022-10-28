@@ -1,8 +1,8 @@
 package command
 
 import (
-	"protokaf/internal/proto"
-	"protokaf/internal/protokaf"
+	"kafeman/internal/kafeman"
+	"kafeman/internal/proto"
 	"strconv"
 
 	"github.com/Shopify/sarama"
@@ -51,7 +51,7 @@ var ConsumeCMD = &cobra.Command{
 			offset = o
 		}
 
-		pk := protokaf.NewProtokaf(conf, outWriter, errWriter)
+		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
 		pk.Consume(cmd.Context(), topic, groupIDFlag, partitionsFlag, false, offset)
 	},
 }

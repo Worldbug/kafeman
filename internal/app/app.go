@@ -1,7 +1,7 @@
 package app
 
 import (
-	"protokaf/internal/command"
+	"kafeman/internal/command"
 
 	"github.com/spf13/cobra"
 )

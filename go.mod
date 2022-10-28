@@ -1,4 +1,4 @@
-module protokaf
+module kafeman
 
 go 1.19
 

@@ -1,2 +1,2 @@
 build:
-	go build -ldflags "-w -s" ./cmd/protokaf
+	go build -ldflags "-w -s" ./cmd/kafeman
