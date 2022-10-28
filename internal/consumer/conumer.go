@@ -100,3 +100,20 @@ func (c *Consumer) consume(wg *sync.WaitGroup, consumer sarama.Consumer, partiti
 func getClientFromConfig(config *sarama.Config) (client sarama.Client) {
 	return client
 }
+
+type offsets struct {
+	newest, oldest int64
+}
+
+func getOffsets(client sarama.Client, topic string, partition int32) (offsets, error) {
+	var off offsets
+	var err error
+
+	off.newest, err = client.GetOffset(topic, partition, sarama.OffsetNewest)
+	if err != nil {
+		return off, err
+	}
+
+	off.oldest, err = client.GetOffset(topic, partition, sarama.OffsetOldest)
+	return off, err
+}

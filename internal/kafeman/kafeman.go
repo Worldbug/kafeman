@@ -18,16 +18,13 @@ func Newkafeman(
 	config config.Config,
 	outWriter io.Writer,
 	errWriter io.Writer,
-	// TODO: remove
-	// inReader  io.Reader,
+	// inReader io.Reader,
 ) *kafeman {
 
 	return &kafeman{
 		config:    config,
 		outWriter: outWriter,
 		errWriter: errWriter,
-		// TODO: remove
-		// protoDecoder: *proto.NewProtobufDecoder(config.Protobuf.ProtoPaths),
 		// TODO: remove
 		// inReader  : inReader,
 	}
@@ -45,7 +42,7 @@ type kafeman struct {
 	protoDecoder proto.ProtobufDecoder
 }
 
-type RunConfig struct {
+type ConsumeCommand struct {
 	Topic         string
 	ConsumerGroup string
 	Partitions    []int32
@@ -55,30 +52,30 @@ type RunConfig struct {
 	WithKey       bool
 }
 
-func (pk *kafeman) Consume(ctx context.Context, setup RunConfig) {
+func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand) {
 	// TODO: remove
-	pk.protoDecoder = *proto.NewProtobufDecoder(pk.config.Topics[setup.Topic].ProtoPaths)
+	k.protoDecoder = *proto.NewProtobufDecoder(k.config.Topics[cmd.Topic].ProtoPaths)
 	// FIXME:
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	c := consumer.NewConsumer(setup.Topic, setup.ConsumerGroup, setup.Partitions, setup.MarkMessages, setup.Offset, pk.config.GetCurrentCluster().Brokers)
+	c := consumer.NewConsumer(cmd.Topic, cmd.ConsumerGroup, cmd.Partitions, cmd.MarkMessages, cmd.Offset, k.config.GetCurrentCluster().Brokers)
 	messages := c.Consume(ctx)
-	if protoType := pk.config.Topics[setup.Topic].ProtoType; protoType != "" {
-		pk.handleProtoMessages(messages, protoType, setup)
+	if protoType := k.config.Topics[cmd.Topic].ProtoType; protoType != "" {
+		k.handleProtoMessages(messages, protoType, cmd)
 	}
 	wg.Wait()
 }
 
-func (pk *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, protoType string, setup RunConfig) {
+func (k *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, protoType string, setup ConsumeCommand) {
 	for msg := range messages {
-		data, err := pk.protoDecoder.DecodeProto(msg.Value, protoType)
+		data, err := k.protoDecoder.DecodeProto(msg.Value, protoType)
 		if err != nil {
-			// TODO: log error
+			fmt.Fprintln(k.errWriter, err)
 			continue
 		}
 
 		if setup.WithKey {
-			pk.Print(Message{
+			k.Print(Message{
 				Timestamp:      msg.Timestamp,
 				BlockTimestamp: msg.BlockTimestamp,
 				Topic:          msg.Topic,
@@ -90,14 +87,14 @@ func (pk *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, pr
 			continue
 		}
 
-		fmt.Fprintln(pk.outWriter, string(data))
+		fmt.Fprintln(k.outWriter, string(data))
 	}
 
 }
 
-func (pk *kafeman) Print(data Message) {
+func (k *kafeman) Print(data Message) {
 	msg, _ := json.Marshal(data)
-	fmt.Fprintln(pk.outWriter, string(msg))
+	fmt.Fprintln(k.outWriter, string(msg))
 }
 
 type Message struct {
