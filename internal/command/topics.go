@@ -2,7 +2,7 @@ package command
 
 import (
 	"fmt"
-	"sort"
+	"kafeman/internal/kafeman"
 	"text/tabwriter"
 	"time"
 
@@ -89,66 +89,15 @@ var LsTopicsCMD = &cobra.Command{
 	Short:   "List topics",
 	Args:    cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		//addrs := strings.Join(conf.GetCurrentCluster().Brokers, ",")
-		conn, err := kafka.Dial("tcp", conf.GetCurrentCluster().Brokers[0])
-		if err != nil {
-			panic(err.Error())
-		}
-		defer conn.Close()
-
-		partitions, err := conn.ReadPartitions()
-		if err != nil {
-			panic(err.Error())
-		}
-
-		m := map[string]struct {
-			partitions int32
-			replicas   int32
-		}{}
-
-		for _, p := range partitions {
-			if info, ok := m[p.Topic]; ok {
-				info.partitions++
-				info.replicas = int32(len(p.Replicas))
-				m[p.Topic] = info
-				continue
-			}
-
-			m[p.Topic] = struct {
-				partitions int32
-				replicas   int32
-			}{
-				1, int32(len(p.Replicas)),
-			}
-		}
-
-		sortedTopics := make(
-			[]struct {
-				name       string
-				partitions int32
-				replicas   int32
-			}, len(m))
-
-		i := 0
-		for name, topic := range m {
-			sortedTopics[i].name = name
-			sortedTopics[i].partitions = topic.partitions
-			sortedTopics[i].replicas = topic.replicas
-			i++
-		}
-
-		sort.Slice(sortedTopics, func(i int, j int) bool {
-			return sortedTopics[i].name < sortedTopics[j].name
-		})
-
+		k := kafeman.Newkafeman(conf, nil, nil)
 		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
 
 		if !noHeaderFlag {
 			fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
 		}
 
-		for _, topic := range sortedTopics {
-			fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.name, topic.partitions, topic.replicas)
+		for _, topic := range k.ListTopics(cmd.Context()) {
+			fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
 		}
 		w.Flush()
 	},

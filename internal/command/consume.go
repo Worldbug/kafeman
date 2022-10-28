@@ -71,15 +71,12 @@ var ConsumeCMD = &cobra.Command{
 }
 
 func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	admin := getClusterAdmin()
+	k := kafeman.Newkafeman(conf, nil, nil)
+	topics := k.ListTopics(cmd.Context())
 
-	topics, err := admin.ListTopics()
-	if err != nil {
-		errorExit("Unable to list topics: %v\n", err)
-	}
 	topicList := make([]string, 0, len(topics))
-	for topic := range topics {
-		topicList = append(topicList, topic)
+	for _, topic := range topics {
+		topicList = append(topicList, topic.Name)
 	}
 	return topicList, cobra.ShellCompDirectiveNoFileComp
 }
@@ -101,15 +98,6 @@ var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 
 		protoRegistry = r
 	}
-}
-
-func getClusterAdmin() (admin sarama.ClusterAdmin) {
-	clusterAdmin, err := sarama.NewClusterAdmin(conf.GetCurrentCluster().Brokers, getConfig())
-	if err != nil {
-		errorExit("Unable to get cluster admin: %v\n", err)
-	}
-
-	return clusterAdmin
 }
 
 func getConfig() (saramaConfig *sarama.Config) {
