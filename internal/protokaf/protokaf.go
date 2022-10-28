@@ -7,31 +7,33 @@ import (
 	"protokaf/internal/config"
 	"protokaf/internal/consumer"
 	"protokaf/internal/proto"
+	"sync"
 
 	"github.com/Shopify/sarama"
 )
 
 func NewProtokaf(
-	config config.Cluster,
+	config config.Config,
 	outWriter io.Writer,
 	errWriter io.Writer,
 	// TODO: remove
 	// inReader  io.Reader,
 ) *Protokaf {
+
 	return &Protokaf{
-		config:    config,
-		outWriter: outWriter,
-		errWriter: errWriter,
+		config:       config,
+		outWriter:    outWriter,
+		errWriter:    errWriter,
+		protoDecoder: *proto.NewProtobufDecoder(config.Protobuf.ProtoPaths),
 		// TODO: remove
 		// inReader  : inReader,
 	}
 }
 
 type Protokaf struct {
-	config config.Cluster
+	config config.Config
 
 	consumer consumer.Consumer
-	brokers  []string
 
 	outWriter io.Writer
 	errWriter io.Writer
@@ -41,23 +43,25 @@ type Protokaf struct {
 }
 
 func (pk *Protokaf) Consume(ctx context.Context, topic, consumerGroup string, partitions []int32, markMessages bool, offset int64) {
-	c := consumer.NewConsumer(topic, consumerGroup, partitions, markMessages, offset, pk.brokers)
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	c := consumer.NewConsumer(topic, consumerGroup, partitions, markMessages, offset, pk.config.GetCurrentCluster().Brokers)
 	messages := c.Consume(ctx)
-	if pk.config.ProtoType != "" {
-
-		pk.handleProtoMessages(messages)
+	if protoType := pk.config.Protobuf.Topics[topic]; protoType != "" {
+		pk.handleProtoMessages(messages, protoType)
 	}
+	wg.Wait()
 }
 
-func (pk *Protokaf) handleProtoMessages(messages chan *sarama.ConsumerMessage) {
+func (pk *Protokaf) handleProtoMessages(messages chan *sarama.ConsumerMessage, protoType string) {
 	for msg := range messages {
-		data, err := pk.protoDecoder.DecodeProto(msg.Value, pk.config.ProtoType)
+		data, err := pk.protoDecoder.DecodeProto(msg.Value, protoType)
 		if err != nil {
 			// TODO: log error
 			continue
 		}
 
-		fmt.Fprintln(pk.outWriter, data)
+		fmt.Fprintln(pk.outWriter, string(data))
 	}
 
 }

@@ -3,9 +3,21 @@ package proto
 import (
 	"bytes"
 
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
 )
+
+func NewProtobufDecoder(importPaths []string) *ProtobufDecoder {
+	reg, err := NewDescriptorRegistry(importPaths, []string{})
+	if err != nil {
+		// TODO:
+		panic(err)
+	}
+
+	return &ProtobufDecoder{
+		protosRegistry: reg,
+	}
+}
 
 type ProtobufDecoder struct {
 	protosRegistry *DescriptorRegistry

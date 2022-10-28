@@ -20,6 +20,8 @@ var (
 )
 
 func init() {
+	RootCMD.AddCommand(ConsumeCMD)
+
 	ConsumeCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer")
 	ConsumeCMD.Flags().StringVarP(&groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
 	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
@@ -27,7 +29,7 @@ func init() {
 }
 
 var ConsumeCMD = &cobra.Command{
-	Use:               "Consume",
+	Use:               "consume",
 	Short:             "Consume messages from kafka topic",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: validTopicArgs,
@@ -49,7 +51,7 @@ var ConsumeCMD = &cobra.Command{
 			offset = o
 		}
 
-		pk := protokaf.NewProtokaf(currentCluster, outWriter, errWriter)
+		pk := protokaf.NewProtokaf(conf, outWriter, errWriter)
 		pk.Consume(cmd.Context(), topic, groupIDFlag, partitionsFlag, false, offset)
 	},
 }
@@ -69,7 +71,7 @@ func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]str
 }
 
 func getClientFromConfig(config *sarama.Config) (client sarama.Client) {
-	client, err := sarama.NewClient(currentCluster.Brokers, config)
+	client, err := sarama.NewClient(conf.GetCurrentCluster().Brokers, config)
 	if err != nil {
 		errorExit("Unable to get client: %v\n", err)
 	}
@@ -88,7 +90,7 @@ var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 }
 
 func getClusterAdmin() (admin sarama.ClusterAdmin) {
-	clusterAdmin, err := sarama.NewClusterAdmin(currentCluster.Brokers, getConfig())
+	clusterAdmin, err := sarama.NewClusterAdmin(conf.GetCurrentCluster().Brokers, getConfig())
 	if err != nil {
 		errorExit("Unable to get cluster admin: %v\n", err)
 	}

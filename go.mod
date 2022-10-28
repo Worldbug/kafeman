@@ -7,6 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/jhump/protoreflect v1.12.0
 	github.com/mattn/go-colorable v0.1.13
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.5.0
 	gopkg.in/yaml.v2 v2.4.0

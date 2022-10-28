@@ -49,7 +49,7 @@ func (c *Consumer) Consume(ctx context.Context) chan *sarama.ConsumerMessage {
 	return c.messages
 }
 
-func (c *Consumer) consumeWithoutConsumerGroup(ctx context.Context) error {
+func (c *Consumer) consumeWithConsumerGroup(ctx context.Context) error {
 	cg, err := sarama.NewConsumerGroupFromClient(c.consumerGroup, c.client)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (c *Consumer) consumeWithoutConsumerGroup(ctx context.Context) error {
 	return err
 }
 
-func (c *Consumer) consumeWithConsumerGroup(ctx context.Context) error {
+func (c *Consumer) consumeWithoutConsumerGroup(ctx context.Context) error {
 	consumer, err := sarama.NewConsumerFromClient(c.client)
 	if err != nil {
 		return err
@@ -75,15 +75,16 @@ func (c *Consumer) consumeWithConsumerGroup(ctx context.Context) error {
 	wg := &sync.WaitGroup{}
 	for _, p := range c.partitions {
 		wg.Add(1)
-		go c.consume(wg, consumer, p, 0)
+		go c.consume(wg, consumer, p, c.offset)
 	}
-	wg.Done()
+	// wg.Wait()
 
 	return nil
 }
 
 func (c *Consumer) consume(wg *sync.WaitGroup, consumer sarama.Consumer, partition int32, offset int64) error {
 	defer wg.Done()
+
 	cp, err := consumer.ConsumePartition(c.topic, partition, offset)
 	if err != nil {
 		return err

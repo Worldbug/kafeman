@@ -18,11 +18,15 @@ func init() {
 	if err != nil {
 		panic("Cant load config")
 	}
+
+	for _, v := range conf.Protobuf.ProtoPaths {
+		protoFiles = append(protoFiles, v)
+	}
 }
 
 var (
-	conf           config.Config
-	currentCluster config.Cluster
+	conf config.Config
+	// currentCluster config.Cluster
 
 	outWriter io.Writer = os.Stdout
 	errWriter io.Writer = os.Stderr
