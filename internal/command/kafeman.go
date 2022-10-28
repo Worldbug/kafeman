@@ -16,7 +16,7 @@ func init() {
 	var err error
 	conf, err = config.LoadConfig("")
 	if err != nil {
-		// panic("Cant load config")
+		fmt.Fprintln(errWriter, "Can`t load config")
 	}
 }
 
