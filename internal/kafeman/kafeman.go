@@ -52,6 +52,7 @@ type ConsumeCommand struct {
 	WithKey       bool
 }
 
+// TOD): refactor
 func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand) {
 	// TODO: remove
 	k.protoDecoder = *proto.NewProtobufDecoder(k.config.Topics[cmd.Topic].ProtoPaths)
@@ -63,6 +64,8 @@ func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand) {
 	if protoType := k.config.Topics[cmd.Topic].ProtoType; protoType != "" {
 		k.handleProtoMessages(messages, protoType, cmd)
 	}
+
+	k.handleMessage(messages, cmd)
 	wg.Wait()
 }
 
@@ -90,6 +93,25 @@ func (k *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, pro
 		fmt.Fprintln(k.outWriter, string(data))
 	}
 
+}
+
+func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup ConsumeCommand) {
+	for msg := range messages {
+		if setup.WithKey {
+			k.Print(Message{
+				Timestamp:      msg.Timestamp,
+				BlockTimestamp: msg.BlockTimestamp,
+				Topic:          msg.Topic,
+				Offset:         msg.Offset,
+
+				Key:   string(msg.Key),
+				Value: string(msg.Value),
+			})
+			continue
+		}
+
+		fmt.Fprintln(k.outWriter, string(msg.Value))
+	}
 }
 
 func (k *kafeman) Print(data Message) {
