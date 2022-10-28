@@ -14,12 +14,12 @@ var (
 	protoExclude []string
 	protoType    string
 
-	offsetFlag       string
-	groupIDFlag      string
-	partitionsFlag   []int32
-	followFlag       bool
-	commitFlag       bool
-	printWithKeyFlag bool
+	offsetFlag     string
+	groupIDFlag    string
+	partitionsFlag []int32
+	followFlag     bool
+	commitFlag     bool
+	printMetaFlag  bool
 )
 
 func init() {
@@ -29,7 +29,7 @@ func init() {
 	ConsumeCMD.Flags().StringVarP(&groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
 	ConsumeCMD.Flags().BoolVarP(&followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	ConsumeCMD.Flags().BoolVar(&commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
-	ConsumeCMD.Flags().BoolVar(&printWithKeyFlag, "with-key", false, "Print with key (marshal into json)")
+	ConsumeCMD.Flags().BoolVar(&printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
 	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
 
 }
@@ -65,7 +65,7 @@ var ConsumeCMD = &cobra.Command{
 			Offset:        offset,
 			MarkMessages:  commitFlag,
 			Follow:        followFlag,
-			WithKey:       printWithKeyFlag,
+			WithMeta:      printMetaFlag,
 		})
 	},
 }

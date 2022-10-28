@@ -8,6 +8,7 @@ import (
 	"kafeman/internal/config"
 	"kafeman/internal/consumer"
 	"kafeman/internal/proto"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,7 +50,7 @@ type ConsumeCommand struct {
 	MarkMessages  bool
 	Offset        int64
 	Follow        bool
-	WithKey       bool
+	WithMeta      bool
 }
 
 // TOD): refactor
@@ -77,7 +78,7 @@ func (k *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, pro
 			continue
 		}
 
-		if setup.WithKey {
+		if setup.WithMeta {
 			k.Print(Message{
 				Timestamp:      msg.Timestamp,
 				BlockTimestamp: msg.BlockTimestamp,
@@ -85,7 +86,7 @@ func (k *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, pro
 				Offset:         msg.Offset,
 
 				Key:   string(msg.Key),
-				Value: string(data),
+				Value: data,
 			})
 			continue
 		}
@@ -97,7 +98,7 @@ func (k *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, pro
 
 func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup ConsumeCommand) {
 	for msg := range messages {
-		if setup.WithKey {
+		if setup.WithMeta {
 			k.Print(Message{
 				Timestamp:      msg.Timestamp,
 				BlockTimestamp: msg.BlockTimestamp,
@@ -105,7 +106,7 @@ func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup Con
 				Offset:         msg.Offset,
 
 				Key:   string(msg.Key),
-				Value: string(msg.Value),
+				Value: msg.Value,
 			})
 			continue
 		}
@@ -114,9 +115,15 @@ func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup Con
 	}
 }
 
+// TODO: Поправить этот костыль
 func (k *kafeman) Print(data Message) {
+	b := data.Value
+	data.Value = []byte{}
 	msg, _ := json.Marshal(data)
-	fmt.Fprintln(k.outWriter, string(msg))
+
+	m := strings.Replace(string(msg), "\"value\":\"\"", "\"value\":"+string(b), 1)
+
+	fmt.Fprintln(k.outWriter, m)
 }
 
 type Message struct {
@@ -124,9 +131,9 @@ type Message struct {
 	Timestamp      time.Time `json:"timestamp,omitempty"`
 	BlockTimestamp time.Time `json:"block_timestamp,omitempty"`
 
-	Key       string `json:"key,omitempty"`
-	Value     string `json:"value"`
 	Topic     string `json:"topic,omitempty"`
 	Partition int32  `json:"partition,omitempty"`
 	Offset    int64  `json:"offset,omitempty"`
+	Key       string `json:"key,omitempty"`
+	Value     []byte `json:"value"`
 }
