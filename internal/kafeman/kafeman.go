@@ -44,13 +44,13 @@ type kafeman struct {
 }
 
 type ConsumeCommand struct {
-	Topic         string
-	ConsumerGroup string
-	Partitions    []int32
-	MarkMessages  bool
-	Offset        int64
-	Follow        bool
-	WithMeta      bool
+	Topic          string
+	ConsumerGroup  string
+	Partitions     []int32
+	CommitMessages bool
+	Offset         int64
+	Follow         bool
+	WithMeta       bool
 }
 
 // TODO: rename

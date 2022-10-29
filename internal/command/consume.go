@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	newestOffset = -1
+	oldestOffset = -2
+)
+
 var (
 	protoFiles   []string
 	protoExclude []string
@@ -25,7 +30,7 @@ var (
 func init() {
 	RootCMD.AddCommand(ConsumeCMD)
 
-	ConsumeCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer")
+	ConsumeCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
 	ConsumeCMD.Flags().StringVarP(&groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
 	ConsumeCMD.Flags().BoolVarP(&followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	ConsumeCMD.Flags().BoolVar(&commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
@@ -46,9 +51,9 @@ var ConsumeCMD = &cobra.Command{
 
 		switch offsetFlag {
 		case "oldest":
-			offset = sarama.OffsetOldest
+			offset = oldestOffset
 		case "newest":
-			offset = sarama.OffsetNewest
+			offset = newestOffset
 		default:
 			o, err := strconv.ParseInt(offsetFlag, 10, 64)
 			if err != nil {
@@ -58,25 +63,15 @@ var ConsumeCMD = &cobra.Command{
 		}
 
 		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
-
 		pk.ConsumeV2(cmd.Context(), kafeman.ConsumeCommand{
-			Topic:         topic,
-			ConsumerGroup: groupIDFlag,
-			Partitions:    partitionsFlag,
-			Offset:        offset,
-			MarkMessages:  commitFlag,
-			Follow:        followFlag,
-			WithMeta:      printMetaFlag,
+			Topic:          topic,
+			ConsumerGroup:  groupIDFlag,
+			Partitions:     partitionsFlag,
+			Offset:         offset,
+			CommitMessages: commitFlag,
+			Follow:         followFlag,
+			WithMeta:       printMetaFlag,
 		})
-		// pk.Consume(cmd.Context(), kafeman.ConsumeCommand{
-		// 	Topic:         topic,
-		// 	ConsumerGroup: groupIDFlag,
-		// 	Partitions:    partitionsFlag,
-		// 	Offset:        offset,
-		// 	MarkMessages:  commitFlag,
-		// 	Follow:        followFlag,
-		// 	WithMeta:      printMetaFlag,
-		// })
 	},
 }
 
