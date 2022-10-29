@@ -58,7 +58,8 @@ var ConsumeCMD = &cobra.Command{
 		}
 
 		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
-		pk.Consume(cmd.Context(), kafeman.ConsumeCommand{
+
+		pk.ConsumeV2(cmd.Context(), kafeman.ConsumeCommand{
 			Topic:         topic,
 			ConsumerGroup: groupIDFlag,
 			Partitions:    partitionsFlag,
@@ -67,6 +68,15 @@ var ConsumeCMD = &cobra.Command{
 			Follow:        followFlag,
 			WithMeta:      printMetaFlag,
 		})
+		// pk.Consume(cmd.Context(), kafeman.ConsumeCommand{
+		// 	Topic:         topic,
+		// 	ConsumerGroup: groupIDFlag,
+		// 	Partitions:    partitionsFlag,
+		// 	Offset:        offset,
+		// 	MarkMessages:  commitFlag,
+		// 	Follow:        followFlag,
+		// 	WithMeta:      printMetaFlag,
+		// })
 	},
 }
 

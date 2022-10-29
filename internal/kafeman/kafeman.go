@@ -10,8 +10,6 @@ import (
 	"kafeman/internal/proto"
 	"sort"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/segmentio/kafka-go"
@@ -55,47 +53,27 @@ type ConsumeCommand struct {
 	WithMeta      bool
 }
 
-// TOD): refactor
-func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand) {
-	// TODO: remove
-	k.protoDecoder = *proto.NewProtobufDecoder(k.config.Topics[cmd.Topic].ProtoPaths)
-	// FIXME:
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	c := consumer.NewConsumer(cmd.Topic, cmd.ConsumerGroup, cmd.Partitions, cmd.MarkMessages, cmd.Offset, k.config.GetCurrentCluster().Brokers)
-	messages := c.Consume(ctx)
-	if protoType := k.config.Topics[cmd.Topic].ProtoType; protoType != "" {
-		k.handleProtoMessages(messages, protoType, cmd)
+// TODO: rename
+func (k *kafeman) handleProtoMessagesV2(message Message, protoType string) Message {
+	data, err := k.protoDecoder.DecodeProto(message.Value, protoType)
+	if err != nil {
+		// TODO: вынести наверх
+		fmt.Fprintln(k.errWriter, err)
+
+		return message
 	}
 
-	k.handleMessage(messages, cmd)
-	wg.Wait()
+	message.Value = data
+	return message
 }
 
-func (k *kafeman) handleProtoMessages(messages chan *sarama.ConsumerMessage, protoType string, setup ConsumeCommand) {
-	for msg := range messages {
-		data, err := k.protoDecoder.DecodeProto(msg.Value, protoType)
-		if err != nil {
-			fmt.Fprintln(k.errWriter, err)
-			continue
-		}
-
-		if setup.WithMeta {
-			k.Print(Message{
-				Timestamp:      msg.Timestamp,
-				BlockTimestamp: msg.BlockTimestamp,
-				Topic:          msg.Topic,
-				Offset:         msg.Offset,
-
-				Key:   string(msg.Key),
-				Value: data,
-			})
-			continue
-		}
-
-		fmt.Fprintln(k.outWriter, string(data))
+func (k *kafeman) printMessage(message Message, printMeta bool) {
+	if !printMeta {
+		fmt.Fprintln(k.outWriter, string(message.Value))
+		return
 	}
 
+	k.Print(message)
 }
 
 func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup ConsumeCommand) {
@@ -107,7 +85,7 @@ func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup Con
 				Topic:          msg.Topic,
 				Offset:         msg.Offset,
 
-				Key:   string(msg.Key),
+				Key:   msg.Key,
 				Value: msg.Value,
 			})
 			continue
@@ -121,29 +99,10 @@ func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup Con
 func (k *kafeman) Print(data Message) {
 	b := data.Value
 	data.Value = []byte{}
-	msg, _ := json.Marshal(data)
+	msg, _ := json.Marshal(messageToPrintable(data))
 
 	m := strings.Replace(string(msg), "\"value\":\"\"", "\"value\":"+string(b), 1)
-
 	fmt.Fprintln(k.outWriter, m)
-}
-
-type Message struct {
-	Headers        []string  `json:"headers,omitempty"`
-	Timestamp      time.Time `json:"timestamp,omitempty"`
-	BlockTimestamp time.Time `json:"block_timestamp,omitempty"`
-
-	Topic     string `json:"topic,omitempty"`
-	Partition int32  `json:"partition,omitempty"`
-	Offset    int64  `json:"offset,omitempty"`
-	Key       string `json:"key,omitempty"`
-	Value     []byte `json:"value"`
-}
-
-type Topic struct {
-	Name       string
-	Partitions int
-	Replicas   int
 }
 
 func (k *kafeman) ListTopics(ctx context.Context) []Topic {
