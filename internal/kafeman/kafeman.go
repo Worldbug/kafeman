@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"kafeman/internal/config"
-	"kafeman/internal/consumer"
 	"kafeman/internal/proto"
 	"sort"
 	"strings"
@@ -32,8 +31,6 @@ func Newkafeman(
 
 type kafeman struct {
 	config config.Config
-
-	consumer consumer.Consumer
 
 	outWriter io.Writer
 	errWriter io.Writer
