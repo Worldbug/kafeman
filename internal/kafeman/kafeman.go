@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Shopify/sarama"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -54,7 +53,7 @@ type ConsumeCommand struct {
 }
 
 // TODO: rename
-func (k *kafeman) handleProtoMessagesV2(message Message, protoType string) Message {
+func (k *kafeman) handleProtoMessages(message Message, protoType string) Message {
 	data, err := k.protoDecoder.DecodeProto(message.Value, protoType)
 	if err != nil {
 		// TODO: вынести наверх
@@ -76,33 +75,20 @@ func (k *kafeman) printMessage(message Message, printMeta bool) {
 	k.Print(message)
 }
 
-func (k *kafeman) handleMessage(messages chan *sarama.ConsumerMessage, setup ConsumeCommand) {
-	for msg := range messages {
-		if setup.WithMeta {
-			k.Print(Message{
-				Timestamp:      msg.Timestamp,
-				BlockTimestamp: msg.BlockTimestamp,
-				Topic:          msg.Topic,
-				Offset:         msg.Offset,
-
-				Key:   msg.Key,
-				Value: msg.Value,
-			})
-			continue
-		}
-
-		fmt.Fprintln(k.outWriter, string(msg.Value))
-	}
-}
-
 // TODO: Поправить этот костыль
 func (k *kafeman) Print(data Message) {
-	b := data.Value
-	data.Value = []byte{}
-	msg, _ := json.Marshal(messageToPrintable(data))
+	if isJSON(data.Value) {
+		ms := messageToPrintable(data)
+		v := ms.Value
+		ms.Value = ""
+		msg, _ := json.Marshal(ms)
+		m := strings.Replace(string(msg), `"value":""`, fmt.Sprintf(`"value":%v`, v), 1)
+		fmt.Fprintln(k.outWriter, m)
+		return
+	}
 
-	m := strings.Replace(string(msg), "\"value\":\"\"", "\"value\":"+string(b), 1)
-	fmt.Fprintln(k.outWriter, m)
+	msg, _ := json.Marshal(messageToPrintable(data))
+	fmt.Fprintln(k.outWriter, string(msg))
 }
 
 func (k *kafeman) ListTopics(ctx context.Context) []Topic {

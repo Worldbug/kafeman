@@ -29,6 +29,10 @@ func (c *Config) GetCurrentCluster() Cluster {
 	return Cluster{}
 }
 
+func (c *Config) SetCurrentCluster(name string) {
+	c.CurrentCluster = name
+}
+
 func GenerateConfig() Config {
 	return Config{
 		CurrentCluster: "prod",
@@ -70,6 +74,11 @@ func LoadConfig(configPath string) (Config, error) {
 }
 
 func ExportConfig(path string) {
+	c := GenerateConfig()
+	SaveConfig(c, path)
+}
+
+func SaveConfig(config Config, path string) {
 	if path == "" {
 		home, err := homedir.Dir()
 		if err != nil {
@@ -87,9 +96,8 @@ func ExportConfig(path string) {
 		panic(err)
 	}
 
-	c := GenerateConfig()
 	encoder := yaml.NewEncoder(file)
-	encoder.Encode(&c)
+	encoder.Encode(&config)
 }
 
 func valueOrDefault(val, def string) string {
