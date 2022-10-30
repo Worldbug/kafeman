@@ -15,7 +15,6 @@ func (k *kafeman) client() kafka.Client {
 
 func (k *kafeman) GetGroupsList(ctx context.Context) ([]string, error) {
 	cli := k.client()
-
 	resp, err := cli.ListGroups(ctx, &kafka.ListGroupsRequest{})
 	if err != nil {
 		return []string{}, err
@@ -51,6 +50,14 @@ func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]Gro
 			})
 
 			if err != nil {
+				for _, name := range batch {
+					describe = append(describe, GroupInfo{
+						Name:      name,
+						State:     "Empty",
+						Consumers: 0,
+					})
+
+				}
 				return
 			}
 
