@@ -31,7 +31,6 @@ var (
 func init() {
 	RootCMD.AddCommand(TopicCMD)
 	RootCMD.AddCommand(TopicsCMD)
-	RootCMD.AddCommand(GetOffset)
 
 	TopicCMD.AddCommand(DescribeCMD)
 	// TopicCMD.AddCommand(createTopicCmd)
@@ -101,15 +100,5 @@ var LsTopicsCMD = &cobra.Command{
 			fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
 		}
 		w.Flush()
-	},
-}
-
-var GetOffset = &cobra.Command{
-	Use:   "get",
-	Short: "Return offset by timestamp",
-	Args:  cobra.ExactArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
-		k.GetOffsetByTimestamp(cmd.Context())
 	},
 }
