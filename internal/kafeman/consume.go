@@ -14,29 +14,37 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 		return
 	}
 
+	if cmd.MessagesCount != 0 {
+		cmd.limitedMessages = true
+	}
+
 	// TODO: ectract
 	k.protoDecoder = *proto.NewProtobufDecoder(k.config.Topics[cmd.Topic].ProtoPaths)
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	wg := &sync.WaitGroup{}
+	if cmd.Follow {
+		wg.Add(1)
+	}
 
 	topicPartitions := toIntSlice(cmd.Partitions)
 	consumePartitions := k.partitions(topicPartitions, cmd.Topic)
 	ch := make(chan Message, len(consumePartitions))
 
 	for _, p := range consumePartitions {
+		wg.Add(1)
 		reader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers:     k.config.GetCurrentCluster().Brokers,
-			Topic:       cmd.Topic,
-			Partition:   p,
-			StartOffset: kafka.FirstOffset,
-			GroupID:     cmd.ConsumerGroup,
+			Brokers:   k.config.GetCurrentCluster().Brokers,
+			Topic:     cmd.Topic,
+			Partition: p,
+			GroupID:   cmd.ConsumerGroup,
 		})
 
-		go k.asyncConsume(ctx, reader, ch, cmd.CommitMessages)
+		reader.SetOffset(cmd.Offset)
+		// TODO: !!!!
+		// reader.SetOffsetAt(ctx context.Context, t time.Time)
+		go k.asyncConsume(ctx, reader, ch, cmd, wg)
 	}
 
-	k.messageHandler(ch, cmd.WithMeta)
 	wg.Wait()
 }
 
@@ -73,7 +81,10 @@ func (k *kafeman) partitions(partitions []int, topic string) []int {
 	return partitions
 }
 
-func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer chan<- Message, commit bool) {
+func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer chan<- Message, cmd ConsumeCommand, wg *sync.WaitGroup) {
+	defer wg.Done()
+	remaring := cmd.MessagesCount
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -82,13 +93,26 @@ func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer
 			msg, err := reader.FetchMessage(ctx)
 			if err != nil {
 				fmt.Fprintln(k.errWriter, err)
+				continue
+			}
+			k.messageHandler(fromKafkaMessage(msg), cmd.WithMeta)
+
+			if reader.Lag() == 0 && !cmd.Follow {
+				return
 			}
 
-			writer <- fromKafkaMessage(msg)
-
-			if commit {
+			if cmd.CommitMessages {
 				reader.CommitMessages(ctx, msg)
 			}
+
+			if cmd.limitedMessages {
+				remaring--
+			}
+
+			if cmd.limitedMessages && remaring == 0 {
+				return
+			}
+
 		}
 	}
 }
@@ -111,12 +135,10 @@ func fromKafkaMessage(msg kafka.Message) Message {
 	}
 }
 
-func (k *kafeman) messageHandler(input <-chan Message, withMeta bool) {
-	for m := range input {
-		if protoType := k.config.Topics[m.Topic].ProtoType; protoType != "" {
-			m = k.handleProtoMessages(m, protoType)
-		}
-
-		k.printMessage(m, withMeta)
+func (k *kafeman) messageHandler(messsage Message, withMeta bool) {
+	if protoType := k.config.Topics[messsage.Topic].ProtoType; protoType != "" {
+		messsage = k.handleProtoMessages(messsage, protoType)
 	}
+
+	k.printMessage(messsage, withMeta)
 }

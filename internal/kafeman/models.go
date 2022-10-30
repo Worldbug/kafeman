@@ -21,9 +21,9 @@ type PrintableMessage struct {
 	Headers   map[string]string `json:"headers,omitempty"`
 	Timestamp time.Time         `json:"timestamp,omitempty"`
 
-	Topic     string `json:"topic,omitempty"`
-	Partition int32  `json:"partition,omitempty"`
-	Offset    int64  `json:"offset,omitempty"`
+	Topic     string `json:"topic"`
+	Partition int32  `json:"partition"`
+	Offset    int64  `json:"offset"`
 	Key       string `json:"key,omitempty"`
 	Value     string `json:"value"`
 }

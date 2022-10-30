@@ -19,12 +19,13 @@ var (
 	protoExclude []string
 	protoType    string
 
-	offsetFlag     string
-	groupIDFlag    string
-	partitionsFlag []int32
-	followFlag     bool
-	commitFlag     bool
-	printMetaFlag  bool
+	offsetFlag        string
+	groupIDFlag       string
+	partitionsFlag    []int32
+	followFlag        bool
+	commitFlag        bool
+	printMetaFlag     bool
+	messagesCountFlag int32
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	ConsumeCMD.Flags().BoolVar(&commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
 	ConsumeCMD.Flags().BoolVar(&printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
 	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
+	ConsumeCMD.Flags().Int32VarP(&messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
 
 }
 
@@ -52,8 +54,10 @@ var ConsumeCMD = &cobra.Command{
 		switch offsetFlag {
 		case "oldest":
 			offset = oldestOffset
+			break
 		case "newest":
 			offset = newestOffset
+			break
 		default:
 			o, err := strconv.ParseInt(offsetFlag, 10, 64)
 			if err != nil {
@@ -71,6 +75,7 @@ var ConsumeCMD = &cobra.Command{
 			CommitMessages: commitFlag,
 			Follow:         followFlag,
 			WithMeta:       printMetaFlag,
+			MessagesCount:  messagesCountFlag,
 		})
 	},
 }
