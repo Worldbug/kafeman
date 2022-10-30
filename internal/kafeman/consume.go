@@ -40,8 +40,10 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 		})
 
 		reader.SetOffset(cmd.Offset)
-		// TODO: !!!!
-		// reader.SetOffsetAt(ctx context.Context, t time.Time)
+		if cmd.FromTime.Unix() != 0 {
+			reader.SetOffsetAt(ctx, cmd.FromTime)
+		}
+
 		go k.asyncConsume(ctx, reader, ch, cmd, wg)
 	}
 

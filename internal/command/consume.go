@@ -4,6 +4,7 @@ import (
 	"kafeman/internal/kafeman"
 	"kafeman/internal/proto"
 	"strconv"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
@@ -25,6 +26,7 @@ var (
 	followFlag        bool
 	commitFlag        bool
 	printMetaFlag     bool
+	fromAtFlag        string
 	messagesCountFlag int32
 )
 
@@ -38,6 +40,7 @@ func init() {
 	ConsumeCMD.Flags().BoolVar(&printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
 	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
 	ConsumeCMD.Flags().Int32VarP(&messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
+	ConsumeCMD.Flags().StringVar(&fromAtFlag, "from", "", "Consume messages earlier time (format 2022-11-01T11:01:05.000Z)")
 
 }
 
@@ -76,8 +79,18 @@ var ConsumeCMD = &cobra.Command{
 			Follow:         followFlag,
 			WithMeta:       printMetaFlag,
 			MessagesCount:  messagesCountFlag,
+			FromTime:       parseTime(fromAtFlag),
 		})
 	},
+}
+
+func parseTime(str string) time.Time {
+	t, err := time.Parse("2006-01-02T15:04:05.000Z", str)
+	if err != nil {
+		return time.Unix(0, 0)
+	}
+
+	return t
 }
 
 func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

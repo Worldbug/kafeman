@@ -9,6 +9,7 @@ import (
 	"kafeman/internal/proto"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -49,6 +50,7 @@ type ConsumeCommand struct {
 	WithMeta        bool
 	MessagesCount   int32
 	limitedMessages bool
+	FromTime        time.Time
 }
 
 // TODO: rename
