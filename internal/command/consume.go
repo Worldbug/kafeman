@@ -40,7 +40,7 @@ func init() {
 	ConsumeCMD.Flags().BoolVar(&printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
 	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
 	ConsumeCMD.Flags().Int32VarP(&messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
-	ConsumeCMD.Flags().StringVar(&fromAtFlag, "from", "", "Consume messages earlier time (format 2022-11-01T11:01:05.000Z)")
+	ConsumeCMD.Flags().StringVar(&fromAtFlag, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
 
 }
 
@@ -85,12 +85,12 @@ var ConsumeCMD = &cobra.Command{
 }
 
 func parseTime(str string) time.Time {
-	t, err := time.Parse("2006-01-02T15:04:05.000Z", str)
+	t, err := time.Parse("2006-01-02T15:04:05", str)
 	if err != nil {
 		return time.Unix(0, 0)
 	}
 
-	return t
+	return t.UTC()
 }
 
 func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

@@ -35,7 +35,7 @@ func messageToPrintable(msg Message) PrintableMessage {
 		Offset:    msg.Offset,
 
 		Headers:   msg.Headers,
-		Timestamp: msg.Timestamp,
+		Timestamp: msg.Timestamp.UTC(),
 
 		Key:   string(msg.Key),
 		Value: string(msg.Value),
