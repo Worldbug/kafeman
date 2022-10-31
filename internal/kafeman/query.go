@@ -155,8 +155,13 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 
 	}
 
+	return k.GetOffsetsForTopic(ctx, gd)
+}
+
+func (k *kafeman) GetOffsetsForTopic(ctx context.Context, group Group) Group {
+	cli := k.client()
 	req := make(map[string][]kafka.OffsetRequest)
-	for t, offsets := range gd.Offsets {
+	for t, offsets := range group.Offsets {
 		req[t] = make([]kafka.OffsetRequest, len(offsets))
 
 		for _, o := range offsets {
@@ -168,34 +173,43 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 
 	}
 
-	offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
-		Topics:         req,
-		IsolationLevel: kafka.ReadUncommitted,
-	})
+	wg := &sync.WaitGroup{}
 
-	if err != nil {
-		return gd
+	for k, v := range req {
+		wg.Add(1)
+		go func(k string, v []kafka.OffsetRequest) {
+			defer wg.Done()
+
+			offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+				Topics: map[string][]kafka.OffsetRequest{
+					k: v,
+				},
+			})
+			if err != nil {
+				return
+			}
+			enrichOffsets(group, offsets)
+		}(k, v)
 	}
 
+	wg.Wait()
+
+	return group
+}
+
+func enrichOffsets(group Group, offsets *kafka.ListOffsetsResponse) {
 	for topic, partitions := range offsets.Topics {
 		offsetsMap := make(map[int]kafka.PartitionOffsets)
 		for _, p := range partitions {
 			offsetsMap[p.Partition] = p
 		}
 
-		// TODO: refactor
-		for i := range gd.Offsets[topic] {
-			p := gd.Offsets[topic][i].Partition
-			oo := offsetsMap[int(p)]
+		for i := range group.Offsets[topic] {
+			partition := group.Offsets[topic][i].Partition
+			offset := offsetsMap[int(partition)]
 
-			gd.Offsets[topic][i].HightWatermark = oo.LastOffset
-			gd.Offsets[topic][i].Lag = oo.LastOffset - gd.Offsets[topic][i].Offset
+			group.Offsets[topic][i].HightWatermark = offset.LastOffset
+			group.Offsets[topic][i].Lag = offset.LastOffset - group.Offsets[topic][i].Offset
 		}
 	}
-
-	return gd
-}
-
-func (k *kafeman) GetOffsetsForTopic() {
-
 }
