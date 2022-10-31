@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"kafeman/internal/kafeman"
 	"sort"
@@ -9,10 +10,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	asJsonFlag bool
+)
+
 func init() {
 	RootCMD.AddCommand(groupCmd)
 	groupCmd.AddCommand(groupsCmd)
 	groupCmd.AddCommand(groupLsCmd)
+	groupCmd.AddCommand(groupDescribeCmd)
+
+	groupDescribeCmd.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 }
 
 var groupCmd = &cobra.Command{
@@ -79,4 +87,70 @@ var groupLsCmd = &cobra.Command{
 
 		w.Flush()
 	},
+}
+
+var groupDescribeCmd = &cobra.Command{
+	Use:               "describe",
+	Short:             "Describe consumer group",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: validGroupArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf, nil, nil)
+		group := k.DescribeGroup(cmd.Context(), args[0])
+
+		if asJsonFlag {
+			jsonGroupDescribe(group)
+			return
+		}
+
+		textGroupDescribe(group)
+
+	}}
+
+func jsonGroupDescribe(group kafeman.Group) {
+	output, _ := json.Marshal(group)
+	fmt.Fprintln(outWriter, string(output))
+
+}
+
+func textGroupDescribe(group kafeman.Group) {
+	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+	fmt.Fprintf(w, "Group ID:\t%v\nState:\t%v\n", group.GroupID, group.State)
+
+	for topic, offsets := range group.Offsets {
+		fmt.Fprintln(w, "")
+		fmt.Fprintln(w, topic)
+		fmt.Fprintln(w, "\tPartition\tOffset\tHigh Watermark\tLag")
+		fmt.Fprintln(w, "\t---------\t------\t--------------\t---")
+
+		sort.Slice(offsets, func(i, j int) bool {
+			return offsets[i].Partition < offsets[j].Partition
+		})
+
+		for _, o := range offsets {
+			fmt.Fprintf(w, "\t%v\t%v\t%v\t%v\n", o.Partition, o.Offset, o.HightWatermark, o.Lag)
+		}
+	}
+
+	// for _, m := range group.Members {
+	// 	fmt.Fprintf(w, "Member:\t%v\nHost:\t%v\n", m.ID, m.Host)
+	// 	fmt.Fprintf(w, "\tTopic\tPartitions\n")
+	// 	fmt.Fprintf(w, "\t-----\t----------\n")
+	// 	for _, a := range m.Assignments {
+	// 		fmt.Fprintf(w, "\t%v\t%v\n", a.Topic, a.Partitions)
+	// 	}
+	// 	fmt.Fprintf(w, "\n")
+	// }
+
+	w.Flush()
+}
+
+func validGroupArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	k := kafeman.Newkafeman(conf, nil, nil)
+	groupList, err := k.GetGroupsList(cmd.Context())
+	if err != nil {
+		fmt.Fprintln(errWriter, err)
+	}
+
+	return groupList, cobra.ShellCompDirectiveNoFileComp
 }

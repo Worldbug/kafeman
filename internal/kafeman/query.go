@@ -95,46 +95,65 @@ func (k *kafeman) GetOffsetsForConsumer(ctx context.Context, group, topic string
 	return offsets, err
 }
 
-func (k *kafeman) GetOffsetByTimestamp(ctx context.Context) {
-	// if len(k.config.GetCurrentCluster().Brokers[0]) < 1 {
-	// 	return
-	// }
+func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
+	gd := NewGroup()
+	cli := k.client()
 
-	// cli := kafka.Client{}
+	groupsDescribe, err := cli.DescribeGroups(ctx, &kafka.DescribeGroupsRequest{
+		GroupIDs: []string{group},
+	})
+	if err != nil {
+		return gd
+	}
 
-	// cli.ConsumerOffsets(ctx, kafka.TopicAndGroup{
-	// 	Topic: string,
-	// })
+	groupTopis := make(map[string][]int)
 
-	// conn, err := kafka.Dial("tcp", k.config.GetCurrentCluster().Brokers[0])
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
-	// defer conn.Close()
+	for _, group := range groupsDescribe.Groups {
+		gd.GroupID = group.GroupID
+		gd.State = group.GroupState
 
-	// oo, ee := conn.ReadOffset(time.Now())
-	// fmt.Println(oo, ee)
+		for _, member := range group.Members {
+			m := Member{
+				Assignments: make([]Assignment, 0),
+				Host:        member.ClientHost,
+				ID:          member.MemberID,
+			}
 
-	// for _, t := range k.ListTopics(ctx) {
-	// 	if t.Name != "processing-state-events" {
-	// 		continue
-	// 	}
+			for _, gmt := range member.MemberAssignments.Topics {
+				if _, ok := groupTopis[gmt.Topic]; !ok {
+					groupTopis[gmt.Topic] = make([]int, 0)
+				}
 
-	// 	for i := t.Partitions - 1; i >= 0; i-- {
-	// 		conn, err := kafka.Dial("tcp", k.config.GetCurrentCluster().Brokers[0])
-	// 		if err != nil {
-	// 			panic(err.Error())
-	// 		}
-	// 		defer conn.Close()
-	// 		c := kafka.NewConnWith(conn, kafka.ConnConfig{
-	// 			Topic:     "processing-state-events",
-	// 			Partition: i,
-	// 		})
+				groupTopis[gmt.Topic] = append(groupTopis[gmt.Topic], gmt.Partitions...)
+				m.Assignments = append(m.Assignments, Assignment{
+					Topic:      gmt.Topic,
+					Partitions: gmt.Partitions,
+				})
+			}
 
-	// 		o, e := c.ReadOffset(time.Now().Add(-time.Hour))
+			gd.Members = append(gd.Members, m)
+		}
 
-	// 		fmt.Printf("Offset: %v Partition: %v Err: %v\n", o, i, e)
-	// 	}
+		offsets, err := cli.OffsetFetch(ctx, &kafka.OffsetFetchRequest{
+			GroupID: gd.GroupID,
+			Topics:  groupTopis,
+		})
+		if err != nil {
+			// TODO:
+		}
 
-	// }
+		for topic, offsets := range offsets.Topics {
+			gd.Offsets[topic] = make([]Offset, 0)
+
+			for _, ofp := range offsets {
+				gd.Offsets[topic] = append(gd.Offsets[topic], Offset{
+					Partition: int32(ofp.Partition),
+					Offset:    ofp.CommittedOffset,
+				})
+			}
+		}
+
+	}
+
+	return gd
 }

@@ -1,6 +1,6 @@
 # kafeman
 
-kaf inspired cli from kafka management
+kaf inspired cli for kafka management
 
 ### Legend
 ✅ Fully implemented \
@@ -25,3 +25,12 @@ kaf inspired cli from kafka management
 ❌| limit-messages
 ❌| proto-exclude 
 ❌| decode-msgpack
+
+### group
+|kafeman|kaf|
+|:---:|:---:|
+❌| commit
+❌| delete
+❌| describe
+✅| ls
+❌| peek
