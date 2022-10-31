@@ -95,6 +95,7 @@ func (k *kafeman) GetOffsetsForConsumer(ctx context.Context, group, topic string
 	return offsets, err
 }
 
+// TODO: refactor
 func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 	gd := NewGroup()
 	cli := k.client()
@@ -106,7 +107,10 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 		return gd
 	}
 
+	offsetsMap := make(map[string]map[int]int64)
 	groupTopis := make(map[string][]int)
+
+	wg := &sync.WaitGroup{}
 
 	for _, group := range groupsDescribe.Groups {
 		gd.GroupID = group.GroupID
@@ -123,6 +127,10 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 				if _, ok := groupTopis[gmt.Topic]; !ok {
 					groupTopis[gmt.Topic] = make([]int, 0)
 				}
+
+				offsetsMap[gmt.Topic] = make(map[int]int64)
+				wg.Add(1)
+				go k.asyncGetLastOffset(ctx, wg, offsetsMap, gmt.Topic, gmt.Partitions...)
 
 				groupTopis[gmt.Topic] = append(groupTopis[gmt.Topic], gmt.Partitions...)
 				m.Assignments = append(m.Assignments, Assignment{
@@ -142,73 +150,55 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 			continue
 		}
 
+		wg.Wait()
 		for topic, offsets := range offsets.Topics {
 			gd.Offsets[topic] = make([]Offset, 0)
 
 			for _, ofp := range offsets {
 				gd.Offsets[topic] = append(gd.Offsets[topic], Offset{
-					Partition: int32(ofp.Partition),
-					Offset:    ofp.CommittedOffset,
+					Partition:      int32(ofp.Partition),
+					Offset:         ofp.CommittedOffset,
+					HightWatermark: offsetsMap[topic][ofp.Partition],
+					Lag:            offsetsMap[topic][ofp.Partition] - ofp.CommittedOffset,
 				})
 			}
 		}
 
 	}
 
-	return k.GetOffsetsForTopic(ctx, gd)
+	return gd // k.GetOffsetsForTopic(ctx, gd)
 }
 
-func (k *kafeman) GetOffsetsForTopic(ctx context.Context, group Group) Group {
+func (k *kafeman) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, offsetMap map[string]map[int]int64, topic string, parts ...int) {
+	defer wg.Done()
+	for p, o := range k.getLastOffset(ctx, topic, parts...) {
+		offsetMap[topic][p] = o
+	}
+}
+
+func (k *kafeman) getLastOffset(ctx context.Context, topic string, partitions ...int) map[int]int64 {
 	cli := k.client()
+	result := make(map[int]int64)
+
 	req := make(map[string][]kafka.OffsetRequest)
-	for t, offsets := range group.Offsets {
-		req[t] = make([]kafka.OffsetRequest, len(offsets))
+	req[topic] = make([]kafka.OffsetRequest, len(partitions))
 
-		for _, o := range offsets {
-			req[t] = append(req[t], kafka.OffsetRequest{
-				Partition: int(o.Partition),
-				Timestamp: -1,
-			})
-		}
-
+	for i, p := range partitions {
+		result[p] = -1
+		req[topic][i].Partition = p
+		req[topic][i].Timestamp = -1
 	}
 
-	wg := &sync.WaitGroup{}
-
-	for k, v := range req {
-		wg.Add(1)
-		go func(k string, v []kafka.OffsetRequest) {
-			defer wg.Done()
-			offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
-				Topics: map[string][]kafka.OffsetRequest{
-					k: v,
-				},
-			})
-			if err != nil {
-				return
-			}
-			enrichOffsets(group, offsets)
-		}(k, v)
+	offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+		Topics: req,
+	})
+	if err != nil {
+		return result
 	}
 
-	wg.Wait()
-
-	return group
-}
-
-func enrichOffsets(group Group, offsets *kafka.ListOffsetsResponse) {
-	for topic, partitions := range offsets.Topics {
-		offsetsMap := make(map[int]kafka.PartitionOffsets)
-		for _, p := range partitions {
-			offsetsMap[p.Partition] = p
-		}
-
-		for i := range group.Offsets[topic] {
-			partition := group.Offsets[topic][i].Partition
-			offset := offsetsMap[int(partition)]
-
-			group.Offsets[topic][i].HightWatermark = offset.LastOffset
-			group.Offsets[topic][i].Lag = offset.LastOffset - group.Offsets[topic][i].Offset
-		}
+	for _, p := range offsets.Topics[topic] {
+		result[p.Partition] = p.LastOffset
 	}
+
+	return result
 }

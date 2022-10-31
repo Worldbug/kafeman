@@ -31,6 +31,6 @@ kaf inspired cli for kafka management
 |:---:|:---:|
 ❌| commit
 ❌| delete
-❌| describe
+✅| describe
 ✅| ls
 ❌| peek

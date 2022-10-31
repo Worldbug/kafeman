@@ -167,3 +167,12 @@ func validGroupArgs(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 	return groupList, cobra.ShellCompDirectiveNoFileComp
 }
+
+/*
+      --all-partitions    apply to all partitions
+  -h, --help              help for commit
+      --noconfirm         Do not prompt for confirmation
+  -o, --offset string     offset to commit
+  -p, --partition int32   partition
+  -t, --topic string      topic
+*/
