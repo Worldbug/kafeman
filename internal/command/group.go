@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	asJsonFlag bool
+	asJsonFlag   bool
+	printAllFlag bool
 )
 
 func init() {
@@ -21,6 +22,7 @@ func init() {
 	groupCmd.AddCommand(groupDescribeCmd)
 
 	groupDescribeCmd.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+	groupDescribeCmd.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
 }
 
 var groupCmd = &cobra.Command{
@@ -108,13 +110,21 @@ var groupDescribeCmd = &cobra.Command{
 	}}
 
 func jsonGroupDescribe(group kafeman.Group) {
-	output, _ := json.Marshal(group)
-	fmt.Fprintln(outWriter, string(output))
+	var output []byte
+	if printAllFlag {
+		output, _ = json.Marshal(group)
+		fmt.Fprintln(outWriter, string(output))
+		return
+	}
 
+	output, _ = json.Marshal(group.Offsets)
+	fmt.Fprintln(outWriter, string(output))
 }
 
 func textGroupDescribe(group kafeman.Group) {
 	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+	defer w.Flush()
+
 	fmt.Fprintf(w, "Group ID:\t%v\nState:\t%v\n", group.GroupID, group.State)
 
 	for topic, offsets := range group.Offsets {
@@ -132,17 +142,20 @@ func textGroupDescribe(group kafeman.Group) {
 		}
 	}
 
-	// for _, m := range group.Members {
-	// 	fmt.Fprintf(w, "Member:\t%v\nHost:\t%v\n", m.ID, m.Host)
-	// 	fmt.Fprintf(w, "\tTopic\tPartitions\n")
-	// 	fmt.Fprintf(w, "\t-----\t----------\n")
-	// 	for _, a := range m.Assignments {
-	// 		fmt.Fprintf(w, "\t%v\t%v\n", a.Topic, a.Partitions)
-	// 	}
-	// 	fmt.Fprintf(w, "\n")
-	// }
+	if !printAllFlag {
+		return
+	}
 
-	w.Flush()
+	for _, m := range group.Members {
+		fmt.Fprintf(w, "Member:\t%v\nHost:\t%v\n", m.ID, m.Host)
+		fmt.Fprintf(w, "\tTopic\tPartitions\n")
+		fmt.Fprintf(w, "\t-----\t----------\n")
+		for _, a := range m.Assignments {
+			fmt.Fprintf(w, "\t%v\t%v\n", a.Topic, a.Partitions)
+		}
+		fmt.Fprintf(w, "\n")
+	}
+
 }
 
 func validGroupArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
