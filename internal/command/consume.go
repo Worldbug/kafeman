@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Shopify/sarama"
 	"github.com/spf13/cobra"
 )
 
@@ -104,14 +103,6 @@ func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]str
 	return topicList, cobra.ShellCompDirectiveNoFileComp
 }
 
-func getClientFromConfig(config *sarama.Config) (client sarama.Client) {
-	client, err := sarama.NewClient(conf.GetCurrentCluster().Brokers, config)
-	if err != nil {
-		errorExit("Unable to get client: %v\n", err)
-	}
-	return client
-}
-
 var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 	if protoType != "" {
 		r, err := proto.NewDescriptorRegistry(protoFiles, protoExclude)
@@ -121,11 +112,4 @@ var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 
 		protoRegistry = r
 	}
-}
-
-func getConfig() (saramaConfig *sarama.Config) {
-	saramaConfig = sarama.NewConfig()
-	saramaConfig.Version = sarama.V1_1_0_0
-	saramaConfig.Producer.Return.Successes = true
-	return saramaConfig
 }

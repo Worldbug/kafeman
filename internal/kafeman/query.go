@@ -155,5 +155,47 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 
 	}
 
+	req := make(map[string][]kafka.OffsetRequest)
+	for t, offsets := range gd.Offsets {
+		req[t] = make([]kafka.OffsetRequest, len(offsets))
+
+		for _, o := range offsets {
+			req[t] = append(req[t], kafka.OffsetRequest{
+				Partition: int(o.Partition),
+				Timestamp: -1,
+			})
+		}
+
+	}
+
+	offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+		Topics:         req,
+		IsolationLevel: kafka.ReadUncommitted,
+	})
+
+	if err != nil {
+		return gd
+	}
+
+	for topic, partitions := range offsets.Topics {
+		offsetsMap := make(map[int]kafka.PartitionOffsets)
+		for _, p := range partitions {
+			offsetsMap[p.Partition] = p
+		}
+
+		// TODO: refactor
+		for i := range gd.Offsets[topic] {
+			p := gd.Offsets[topic][i].Partition
+			oo := offsetsMap[int(p)]
+
+			gd.Offsets[topic][i].HightWatermark = oo.LastOffset
+			gd.Offsets[topic][i].Lag = oo.LastOffset - gd.Offsets[topic][i].Offset
+		}
+	}
+
 	return gd
+}
+
+func (k *kafeman) GetOffsetsForTopic() {
+
 }
