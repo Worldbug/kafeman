@@ -139,7 +139,7 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 			Topics:  groupTopis,
 		})
 		if err != nil {
-			// TODO:
+			continue
 		}
 
 		for topic, offsets := range offsets.Topics {
@@ -179,7 +179,6 @@ func (k *kafeman) GetOffsetsForTopic(ctx context.Context, group Group) Group {
 		wg.Add(1)
 		go func(k string, v []kafka.OffsetRequest) {
 			defer wg.Done()
-
 			offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
 				Topics: map[string][]kafka.OffsetRequest{
 					k: v,
