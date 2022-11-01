@@ -11,8 +11,13 @@ import (
 )
 
 var (
-	asJsonFlag   bool
-	printAllFlag bool
+	asJsonFlag        bool
+	fromJsonFlag      bool
+	printAllFlag      bool
+	allPartitionsFlag bool
+	noConfirmFlag     bool
+	partitionFag      int
+	topicFlag         string
 )
 
 func init() {
@@ -22,8 +27,17 @@ func init() {
 	groupCmd.AddCommand(groupDescribeCmd)
 	groupCmd.AddCommand(groupDeleteCmd)
 
+	groupCmd.AddCommand(groupCommitCMD)
+
 	groupDescribeCmd.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	groupDescribeCmd.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
+
+	groupCommitCMD.Flags().BoolVar(&fromJsonFlag, "json", false, "Parse json from std and set values")
+	groupCommitCMD.Flags().BoolVar(&allPartitionsFlag, "all-partitions", false, "apply to all partitions")
+	groupCommitCMD.Flags().IntVar(&partitionFag, "p", 0, "partition")
+	groupCommitCMD.Flags().StringVarP(&offsetFlag, "offset", "o", "", "offset to commit")
+	groupCommitCMD.Flags().StringVarP(&topicFlag, "topic", "t", "", "topic to set offset")
+	groupCommitCMD.Flags().BoolVar(&noConfirmFlag, "y", false, "Do not prompt for confirmation")
 }
 
 var groupCmd = &cobra.Command{
@@ -110,6 +124,34 @@ var groupDescribeCmd = &cobra.Command{
 		textGroupDescribe(group)
 
 	}}
+
+// TODO:
+var groupCommitCMD = &cobra.Command{
+	Use:   "commit",
+	Short: "Set offset for given consumer group",
+	Long:  "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf, nil, nil)
+		group := args[0]
+		offsets := make([]kafeman.Offset, 0)
+
+		if fromJsonFlag {
+
+		}
+
+		if allPartitionsFlag {
+			// get topic offsets
+			// k.ListTopics(ctx)
+		}
+
+		if !noConfirmFlag {
+
+		}
+
+		k.CommitGroup(cmd.Context(), group, topicFlag, offsets)
+	},
+}
 
 func jsonGroupDescribe(group kafeman.Group) {
 	var output []byte

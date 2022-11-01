@@ -7,6 +7,13 @@ kaf inspired cli for kafka management
 ❌ Not implemented \
 ✔️ Partially implemented
 
+### Supported messages types
+|state|type|
+| :---: | :---: |
+✅|protobuf
+✅|json
+❌|message-pack
+
 ### consume
 
 |kafeman|kaf|
@@ -30,7 +37,7 @@ kaf inspired cli for kafka management
 |kafeman|kaf|
 |:---:|:---:|
 ❌| commit
-❌| delete
+✅| delete
 ✅| describe
 ✅| ls
 ❌| peek

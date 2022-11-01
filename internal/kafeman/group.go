@@ -210,3 +210,22 @@ func (k *kafeman) DeleteGroup(group string) error {
 	admin := k.getSaramaAdmin()
 	return admin.DeleteConsumerGroup(group)
 }
+
+func (k *kafeman) CommitGroup(ctx context.Context, group, topic string, partitions []Offset) {
+	cli := k.client()
+
+	offsets := make(map[string][]kafka.OffsetCommit)
+	offsets[topic] = make([]kafka.OffsetCommit, 0, len(partitions))
+
+	for _, p := range partitions {
+		offsets[topic] = append(offsets[topic], kafka.OffsetCommit{
+			Partition: int(p.Partition),
+			Offset:    p.Offset,
+		})
+	}
+
+	cli.OffsetCommit(ctx, &kafka.OffsetCommitRequest{
+		GroupID: group,
+		Topics:  offsets,
+	})
+}
