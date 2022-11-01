@@ -108,6 +108,7 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 	}
 
 	offsetsMap := make(map[string]map[int]int64)
+	mu := &sync.Mutex{}
 	groupTopis := make(map[string][]int)
 
 	wg := &sync.WaitGroup{}
@@ -130,7 +131,7 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 
 				offsetsMap[gmt.Topic] = make(map[int]int64)
 				wg.Add(1)
-				go k.asyncGetLastOffset(ctx, wg, offsetsMap, gmt.Topic, gmt.Partitions...)
+				go k.asyncGetLastOffset(ctx, wg, mu, offsetsMap, gmt.Topic, gmt.Partitions...)
 
 				groupTopis[gmt.Topic] = append(groupTopis[gmt.Topic], gmt.Partitions...)
 				m.Assignments = append(m.Assignments, Assignment{
@@ -169,10 +170,12 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 	return gd // k.GetOffsetsForTopic(ctx, gd)
 }
 
-func (k *kafeman) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, offsetMap map[string]map[int]int64, topic string, parts ...int) {
+func (k *kafeman) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) {
 	defer wg.Done()
 	for p, o := range k.getLastOffset(ctx, topic, parts...) {
+		mu.Lock()
 		offsetMap[topic][p] = o
+		mu.Unlock()
 	}
 }
 
@@ -201,4 +204,9 @@ func (k *kafeman) getLastOffset(ctx context.Context, topic string, partitions ..
 	}
 
 	return result
+}
+
+func (k *kafeman) DeleteGroup(group string) error {
+	admin := k.getSaramaAdmin()
+	return admin.DeleteConsumerGroup(group)
 }

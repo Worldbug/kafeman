@@ -20,6 +20,7 @@ func init() {
 	groupCmd.AddCommand(groupsCmd)
 	groupCmd.AddCommand(groupLsCmd)
 	groupCmd.AddCommand(groupDescribeCmd)
+	groupCmd.AddCommand(groupDeleteCmd)
 
 	groupDescribeCmd.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	groupDescribeCmd.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
@@ -36,26 +37,27 @@ var groupsCmd = &cobra.Command{
 	Run:   groupLsCmd.Run,
 }
 
-// var groupDeleteCmd = &cobra.Command{
-// 	Use:               "delete",
-// 	Short:             "Delete group",
-// 	Args:              cobra.MaximumNArgs(1),
-// 	ValidArgsFunction: validGroupArgs,
-// 	Run: func(cmd *cobra.Command, args []string) {
-// 		admin := getClusterAdmin()
-// 		var group string
-// 		if len(args) == 1 {
-// 			group = args[0]
-// 		}
-// 		err := admin.DeleteConsumerGroup(group)
-// 		if err != nil {
-// 			errorExit("Could not delete consumer group %v: %v\n", group, err.Error())
-// 		} else {
-// 			fmt.Printf("Deleted consumer group %v.\n", group)
-// 		}
-//
-// 	},
-// }
+var groupDeleteCmd = &cobra.Command{
+	Use:               "delete",
+	Short:             "Delete group",
+	Args:              cobra.MaximumNArgs(1),
+	ValidArgsFunction: validGroupArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf, nil, nil)
+
+		var group string
+		if len(args) == 1 {
+			group = args[0]
+		}
+		err := k.DeleteGroup(group)
+		if err != nil {
+			errorExit("Could not delete consumer group %v: %v\n", group, err.Error())
+		} else {
+			fmt.Printf("Deleted consumer group %v.\n", group)
+		}
+
+	},
+}
 
 var groupLsCmd = &cobra.Command{
 	Use:   "ls",
