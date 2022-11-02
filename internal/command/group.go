@@ -21,31 +21,31 @@ var (
 )
 
 func init() {
-	RootCMD.AddCommand(groupCmd)
-	groupCmd.AddCommand(groupsCmd)
-	groupCmd.AddCommand(groupLsCmd)
-	groupCmd.AddCommand(groupDescribeCmd)
-	groupCmd.AddCommand(groupDeleteCmd)
+	RootCMD.AddCommand(GroupCMD)
+	RootCMD.AddCommand(GroupsCMD)
 
-	groupCmd.AddCommand(groupCommitCMD)
+	GroupCMD.AddCommand(GroupsCMD)
+	GroupCMD.AddCommand(groupLsCmd)
+	GroupCMD.AddCommand(groupDescribeCmd)
+	GroupCMD.AddCommand(groupDeleteCmd)
+	GroupCMD.AddCommand(groupCommitCMD)
 
 	groupDescribeCmd.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	groupDescribeCmd.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
-
 	groupCommitCMD.Flags().BoolVar(&fromJsonFlag, "json", false, "Parse json from std and set values")
 	groupCommitCMD.Flags().BoolVar(&allPartitionsFlag, "all-partitions", false, "apply to all partitions")
 	groupCommitCMD.Flags().IntVar(&partitionFag, "p", 0, "partition")
-	groupCommitCMD.Flags().StringVarP(&offsetFlag, "offset", "o", "", "offset to commit")
+	groupCommitCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
 	groupCommitCMD.Flags().StringVarP(&topicFlag, "topic", "t", "", "topic to set offset")
 	groupCommitCMD.Flags().BoolVar(&noConfirmFlag, "y", false, "Do not prompt for confirmation")
 }
 
-var groupCmd = &cobra.Command{
+var GroupCMD = &cobra.Command{
 	Use:   "group",
 	Short: "Display information about consumer groups.",
 }
 
-var groupsCmd = &cobra.Command{
+var GroupsCMD = &cobra.Command{
 	Use:   "groups",
 	Short: "List groups",
 	Run:   groupLsCmd.Run,
@@ -135,14 +135,23 @@ var groupCommitCMD = &cobra.Command{
 		k := kafeman.Newkafeman(conf, nil, nil)
 		group := args[0]
 		offsets := make([]kafeman.Offset, 0)
+		partitions := make([]int, 0)
 
 		if fromJsonFlag {
 
 		}
 
 		if allPartitionsFlag {
-			// get topic offsets
-			// k.ListTopics(ctx)
+			t := k.GetTopicInfo(cmd.Context(), topicFlag)
+			o := getOffsetFromFlag()
+
+			for i := t.Partitions - 1; i >= 0; i-- {
+				offsets = append(offsets, kafeman.Offset{
+					Partition: int32(i),
+					Offset:    o,
+				})
+				partitions = append(partitions, i)
+			}
 		}
 
 		if !noConfirmFlag {

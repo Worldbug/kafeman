@@ -2,6 +2,7 @@ package kafeman
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/segmentio/kafka-go"
@@ -167,65 +168,95 @@ func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
 
 	}
 
-	return gd // k.GetOffsetsForTopic(ctx, gd)
+	return gd
+}
+
+func (k *kafeman) fetchLastOffset(ctx context.Context, topic string, partition int) Offset {
+	cli := k.client()
+	resp, err := cli.Fetch(ctx, &kafka.FetchRequest{
+		Topic:     topic,
+		Partition: partition,
+		Offset:    -1,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return Offset{}
+	}
+
+	return Offset{
+		Partition:      int32(resp.Partition),
+		HightWatermark: resp.HighWatermark,
+	}
 }
 
 func (k *kafeman) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) {
 	defer wg.Done()
-	for p, o := range k.getLastOffset(ctx, topic, parts...) {
+	for _, partition := range parts {
+		offset := k.fetchLastOffset(ctx, topic, partition)
 		mu.Lock()
-		offsetMap[topic][p] = o
+		offsetMap[topic][int(offset.Partition)] = offset.HightWatermark
 		mu.Unlock()
 	}
 }
-
-func (k *kafeman) getLastOffset(ctx context.Context, topic string, partitions ...int) map[int]int64 {
-	cli := k.client()
-	result := make(map[int]int64)
-
-	req := make(map[string][]kafka.OffsetRequest)
-	req[topic] = make([]kafka.OffsetRequest, len(partitions))
-
-	for i, p := range partitions {
-		result[p] = -1
-		req[topic][i].Partition = p
-		req[topic][i].Timestamp = -1
-	}
-
-	offsets, err := cli.ListOffsets(ctx, &kafka.ListOffsetsRequest{
-		Topics: req,
-	})
-	if err != nil {
-		return result
-	}
-
-	for _, p := range offsets.Topics[topic] {
-		result[p.Partition] = p.LastOffset
-	}
-
-	return result
-}
-
 func (k *kafeman) DeleteGroup(group string) error {
 	admin := k.getSaramaAdmin()
 	return admin.DeleteConsumerGroup(group)
 }
 
 func (k *kafeman) CommitGroup(ctx context.Context, group, topic string, partitions []Offset) {
-	cli := k.client()
+	// msg := kafka.Message{
+	// 	Topic: string,
+	// 	Partition: int,
+	// 	Offset: int64,
+	// }
 
-	offsets := make(map[string][]kafka.OffsetCommit)
-	offsets[topic] = make([]kafka.OffsetCommit, 0, len(partitions))
+	// cli := k.client()
 
+	// cli.LeaveGroup(ctx, &kafka.LeaveGroupRequest{})
 	for _, p := range partitions {
-		offsets[topic] = append(offsets[topic], kafka.OffsetCommit{
+		r := kafka.NewReader(kafka.ReaderConfig{
+			Brokers:   k.config.GetCurrentCluster().Brokers,
+			GroupID:   group,
+			Topic:     topic,
 			Partition: int(p.Partition),
-			Offset:    p.Offset,
 		})
-	}
 
-	cli.OffsetCommit(ctx, &kafka.OffsetCommitRequest{
-		GroupID: group,
-		Topics:  offsets,
-	})
+		e := r.SetOffset(p.Offset)
+		fmt.Println(e)
+		r.Close()
+	}
 }
+
+// func (k *kafeman) commitGroup(ctx context.Context, group, topic string, partitions []Offset) {
+// 	cli := k.client()
+//
+// 	topics := make(map[string][]int)
+// 	topics[topic] = make([]int, len(partitions))
+//
+// 	for i, p := range partitions {
+// 		topics[topic][i] = int(p.Partition)
+// 	}
+//
+// 	resp, err := cli.OffsetFetch(ctx, &kafka.OffsetFetchRequest{
+// 		GroupID: topic,
+// 		Topics:  topics,
+// 	})
+//
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+//
+// 	for t, o := range resp.Topics {
+// 		for i, ofp := range o {
+// 			ofp.k
+// 		}
+// 	}
+//
+// 	cli.OffsetCommit(ctx, &kafka.OffsetCommitRequest{
+// 		Topics:       map[string][]kafka.OffsetCommit{},
+// 		GenerationID: 0,
+// 		GroupID:      group,
+// 		// InstanceID: ,
+// 	})
+//
+// }

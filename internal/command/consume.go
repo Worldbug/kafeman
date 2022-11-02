@@ -50,23 +50,8 @@ var ConsumeCMD = &cobra.Command{
 	ValidArgsFunction: validTopicArgs,
 	PreRun:            setupProtoDescriptorRegistry,
 	Run: func(cmd *cobra.Command, args []string) {
-		var offset int64
+		offset := getOffsetFromFlag()
 		topic := args[0]
-
-		switch offsetFlag {
-		case "oldest":
-			offset = oldestOffset
-			break
-		case "newest":
-			offset = newestOffset
-			break
-		default:
-			o, err := strconv.ParseInt(offsetFlag, 10, 64)
-			if err != nil {
-				errorExit("Could not parse '%s' to int64: %w", offsetFlag, err)
-			}
-			offset = o
-		}
 
 		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
 		pk.ConsumeV2(cmd.Context(), kafeman.ConsumeCommand{
@@ -112,4 +97,24 @@ var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 
 		protoRegistry = r
 	}
+}
+
+func getOffsetFromFlag() int64 {
+	var offset int64
+	switch offsetFlag {
+	case "oldest":
+		offset = oldestOffset
+		break
+	case "newest":
+		offset = newestOffset
+		break
+	default:
+		o, err := strconv.ParseInt(offsetFlag, 10, 64)
+		if err != nil {
+			errorExit("Could not parse '%s' to int64: %w", offsetFlag, err)
+		}
+		offset = o
+	}
+
+	return offset
 }

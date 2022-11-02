@@ -39,7 +39,8 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 			GroupID:   cmd.ConsumerGroup,
 		})
 
-		reader.SetOffset(cmd.Offset)
+		err := reader.SetOffset(cmd.Offset)
+		fmt.Println(err)
 		if cmd.FromTime.Unix() != 0 {
 			reader.SetOffsetAt(ctx, cmd.FromTime)
 		}
