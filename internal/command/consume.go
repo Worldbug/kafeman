@@ -2,6 +2,7 @@ package command
 
 import (
 	"kafeman/internal/kafeman"
+	"kafeman/internal/models"
 	"kafeman/internal/proto"
 	"strconv"
 	"time"
@@ -54,7 +55,7 @@ var ConsumeCMD = &cobra.Command{
 		topic := args[0]
 
 		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
-		pk.ConsumeV2(cmd.Context(), kafeman.ConsumeCommand{
+		pk.ConsumeV2(cmd.Context(), models.ConsumeCommand{
 			Topic:          topic,
 			ConsumerGroup:  groupIDFlag,
 			Partitions:     partitionsFlag,

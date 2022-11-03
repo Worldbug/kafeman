@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 	"kafeman/internal/config"
+	"kafeman/internal/models"
 	"kafeman/internal/proto"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -40,21 +40,8 @@ type kafeman struct {
 	protoDecoder proto.ProtobufDecoder
 }
 
-type ConsumeCommand struct {
-	Topic           string
-	ConsumerGroup   string
-	Partitions      []int32
-	CommitMessages  bool
-	Offset          int64
-	Follow          bool
-	WithMeta        bool
-	MessagesCount   int32
-	limitedMessages bool
-	FromTime        time.Time
-}
-
 // TODO: rename
-func (k *kafeman) handleProtoMessages(message Message, protoType string) Message {
+func (k *kafeman) handleProtoMessages(message models.Message, protoType string) models.Message {
 	data, err := k.protoDecoder.DecodeProto(message.Value, protoType)
 	if err != nil {
 		// TODO: вынести наверх
@@ -67,7 +54,7 @@ func (k *kafeman) handleProtoMessages(message Message, protoType string) Message
 	return message
 }
 
-func (k *kafeman) printMessage(message Message, printMeta bool) {
+func (k *kafeman) printMessage(message models.Message, printMeta bool) {
 	if !printMeta {
 		fmt.Fprintln(k.outWriter, string(message.Value))
 		return
@@ -77,7 +64,7 @@ func (k *kafeman) printMessage(message Message, printMeta bool) {
 }
 
 // TODO: Поправить этот костыль
-func (k *kafeman) Print(data Message) {
+func (k *kafeman) Print(data models.Message) {
 	if isJSON(data.Value) {
 		ms := messageToPrintable(data)
 		v := ms.Value

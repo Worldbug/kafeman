@@ -3,19 +3,31 @@ package kafeman
 import (
 	"context"
 	"fmt"
+	"kafeman/internal/consumer"
+	"kafeman/internal/models"
 	"kafeman/internal/proto"
 	"sync"
 
 	"github.com/segmentio/kafka-go"
 )
 
-func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
+func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) {
+	output := make(chan models.Message)
+	c := consumer.NewSaramaConsuemr(output, k.config, cmd)
+
+	c.StartConsume(ctx)
+	for m := range output {
+		fmt.Println(m)
+	}
+}
+
+func (k *kafeman) ConsumeV2(ctx context.Context, cmd models.ConsumeCommand) {
 	if len(k.config.GetCurrentCluster().Brokers[0]) < 1 {
 		return
 	}
 
 	if cmd.MessagesCount != 0 {
-		cmd.limitedMessages = true
+		cmd.LimitedMessages = true
 	}
 
 	// TODO: ectract
@@ -28,7 +40,7 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 
 	topicPartitions := toIntSlice(cmd.Partitions)
 	consumePartitions := k.partitions(topicPartitions, cmd.Topic)
-	ch := make(chan Message, len(consumePartitions))
+	ch := make(chan models.Message, len(consumePartitions))
 
 	for _, p := range consumePartitions {
 		wg.Add(1)
@@ -94,7 +106,7 @@ func (k *kafeman) partitions(partitions []int, topic string) []int {
 	return partitions
 }
 
-func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer chan<- Message, cmd ConsumeCommand, wg *sync.WaitGroup) {
+func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer chan<- models.Message, cmd models.ConsumeCommand, wg *sync.WaitGroup) {
 	defer wg.Done()
 	remaring := cmd.MessagesCount
 
@@ -118,11 +130,11 @@ func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer
 				reader.CommitMessages(ctx, msg)
 			}
 
-			if cmd.limitedMessages {
+			if cmd.LimitedMessages {
 				remaring--
 			}
 
-			if cmd.limitedMessages && remaring == 0 {
+			if cmd.LimitedMessages && remaring == 0 {
 				return
 			}
 
@@ -130,7 +142,7 @@ func (k *kafeman) asyncConsume(ctx context.Context, reader *kafka.Reader, writer
 	}
 }
 
-func fromKafkaMessage(msg kafka.Message) Message {
+func fromKafkaMessage(msg kafka.Message) models.Message {
 	headers := make(map[string]string)
 
 	for _, h := range msg.Headers {
@@ -138,7 +150,7 @@ func fromKafkaMessage(msg kafka.Message) Message {
 		headers[h.Key] = string(h.Value)
 	}
 
-	return Message{
+	return models.Message{
 		Headers:   headers,
 		Timestamp: msg.Time,
 		Offset:    msg.Offset,
@@ -148,7 +160,7 @@ func fromKafkaMessage(msg kafka.Message) Message {
 	}
 }
 
-func (k *kafeman) messageHandler(messsage Message, withMeta bool) {
+func (k *kafeman) messageHandler(messsage models.Message, withMeta bool) {
 	if protoType := k.config.Topics[messsage.Topic].ProtoType; protoType != "" {
 		messsage = k.handleProtoMessages(messsage, protoType)
 	}
