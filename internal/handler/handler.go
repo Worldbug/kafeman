@@ -8,13 +8,15 @@ import (
 
 func NewMessageHandler(wg *sync.WaitGroup) *MessageHandler {
 	return &MessageHandler{
-		wg: wg,
+		wg:      wg,
+		closeWG: &sync.WaitGroup{},
 	}
 }
 
 type MessageHandler struct {
 	messages chan models.Message
 	wg       *sync.WaitGroup
+	closeWG  *sync.WaitGroup
 }
 
 func (mg *MessageHandler) Close() {
@@ -22,6 +24,8 @@ func (mg *MessageHandler) Close() {
 }
 
 func (mg *MessageHandler) Start() {
+	mg.closeWG.Add(1)
+	defer mg.closeWG.Done()
 	for m := range mg.messages {
 		mg.handle(m)
 	}
@@ -48,4 +52,5 @@ func (mg *MessageHandler) Stop() {
 	if mg.messages != nil {
 		close(mg.messages)
 	}
+	mg.closeWG.Wait()
 }
