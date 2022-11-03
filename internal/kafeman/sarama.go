@@ -1,8 +1,6 @@
 package kafeman
 
 import (
-	"context"
-
 	"github.com/Shopify/sarama"
 )
 
@@ -27,32 +25,34 @@ func (k *kafeman) getSaramaConfig() *sarama.Config {
 	return saramaConfig
 }
 
-func (k *kafeman) getConsumerGroup(group string) {
-	conf := k.getSaramaConfig()
+// func (k *kafeman) getConsumerGroup(group string) {
+// 	conf := k.getSaramaConfig()
+//
+// 	cg, err := sarama.NewConsumerGroup(k.config.GetCurrentCluster().Brokers, group, conf)
+// 	if err != nil {
+// 		return
+// 	}
+//
+// 	cg.Consume(context.Background(), []string{"test"}, k)
+// }
 
-	cg, err := sarama.NewConsumerGroup(k.config.GetCurrentCluster().Brokers, group, conf)
-	if err != nil {
-		return
-	}
-
-	cg.Consume(context.Background(), []string{"test"}, k)
-}
-
-func (k *kafeman) Setup(_ sarama.ConsumerGroupSession) error {
-	return nil
-}
-
-func (k *kafeman) Cleanup(_ sarama.ConsumerGroupSession) error {
-	return nil
-}
-
-func (k *kafeman) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	for {
-		select {
-		case <-session.Context().Done():
-			return nil
-		case msg := <-claim.Messages():
-			k.messageHandler(messageFromSarama(msg), true)
-		}
-	}
-}
+//
+// func (k *kafeman) Setup(_ sarama.ConsumerGroupSession) error {
+// 	return nil
+// }
+//
+// func (k *kafeman) Cleanup(_ sarama.ConsumerGroupSession) error {
+// 	return nil
+// }
+//
+// func (k *kafeman) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+// 	for {
+// 		select {
+// 		case <-session.Context().Done():
+// 			return nil
+// 		case msg := <-claim.Messages():
+// 			k.messageHandler(messageFromSarama(msg), true)
+// 		}
+// 	}
+// }
+//

@@ -203,60 +203,25 @@ func (k *kafeman) DeleteGroup(group string) error {
 	return admin.DeleteConsumerGroup(group)
 }
 
-func (k *kafeman) CommitGroup(ctx context.Context, group, topic string, partitions []Offset) {
-	// msg := kafka.Message{
-	// 	Topic: string,
-	// 	Partition: int,
-	// 	Offset: int64,
-	// }
-
-	// cli := k.client()
-
-	// cli.LeaveGroup(ctx, &kafka.LeaveGroupRequest{})
+func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []Offset) {
 	for _, p := range partitions {
 		r := kafka.NewReader(kafka.ReaderConfig{
-			Brokers:   k.config.GetCurrentCluster().Brokers,
-			GroupID:   group,
-			Topic:     topic,
-			Partition: int(p.Partition),
+			GroupID:     group,
+			Brokers:     k.config.GetCurrentCluster().Brokers,
+			Topic:       topic,
+			StartOffset: kafka.FirstOffset,
+			Partition:   int(p.Partition),
 		})
 
-		e := r.SetOffset(p.Offset)
-		fmt.Println(e)
+		msg, _ := r.FetchMessage(ctx)
+
+		msg.Offset = p.Offset
+		r.CommitMessages(ctx, msg)
 		r.Close()
 	}
+
+	return
 }
 
-// func (k *kafeman) commitGroup(ctx context.Context, group, topic string, partitions []Offset) {
-// 	cli := k.client()
-//
-// 	topics := make(map[string][]int)
-// 	topics[topic] = make([]int, len(partitions))
-//
-// 	for i, p := range partitions {
-// 		topics[topic][i] = int(p.Partition)
-// 	}
-//
-// 	resp, err := cli.OffsetFetch(ctx, &kafka.OffsetFetchRequest{
-// 		GroupID: topic,
-// 		Topics:  topics,
-// 	})
-//
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-//
-// 	for t, o := range resp.Topics {
-// 		for i, ofp := range o {
-// 			ofp.k
-// 		}
-// 	}
-//
-// 	cli.OffsetCommit(ctx, &kafka.OffsetCommitRequest{
-// 		Topics:       map[string][]kafka.OffsetCommit{},
-// 		GenerationID: 0,
-// 		GroupID:      group,
-// 		// InstanceID: ,
-// 	})
-//
-// }
+// TODO
+// func (k *kafeman) SetGroupOffsetBytime(ctx context.Context, group, topic string, partitions []Offset) {}

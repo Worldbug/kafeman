@@ -158,7 +158,7 @@ var groupCommitCMD = &cobra.Command{
 
 		}
 
-		k.CommitGroup(cmd.Context(), group, topicFlag, offsets)
+		k.SetGroupOffset(cmd.Context(), group, topicFlag, offsets)
 	},
 }
 

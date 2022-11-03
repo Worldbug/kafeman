@@ -26,12 +26,6 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 		wg.Add(1)
 	}
 
-	wg.Add(1)
-	if cmd.ConsumerGroup != "" {
-		k.getConsumerGroup(cmd.ConsumerGroup)
-	}
-	wg.Wait()
-
 	topicPartitions := toIntSlice(cmd.Partitions)
 	consumePartitions := k.partitions(topicPartitions, cmd.Topic)
 	ch := make(chan Message, len(consumePartitions))
@@ -39,14 +33,24 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 	for _, p := range consumePartitions {
 		wg.Add(1)
 		reader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers:   k.config.GetCurrentCluster().Brokers,
-			Topic:     cmd.Topic,
-			Partition: p,
-			GroupID:   cmd.ConsumerGroup,
+			Brokers:     k.config.GetCurrentCluster().Brokers,
+			Topic:       cmd.Topic,
+			Partition:   p,
+			GroupID:     cmd.ConsumerGroup,
+			StartOffset: cmd.Offset,
 		})
 
-		err := reader.SetOffset(cmd.Offset)
-		fmt.Println(err)
+		if cmd.Offset != kafka.LastOffset &&
+			cmd.Offset != kafka.FirstOffset &&
+			cmd.Offset != 0 {
+			k.SetGroupOffset(ctx, cmd.ConsumerGroup, cmd.Topic, []Offset{
+				{
+					Partition: int32(p),
+					Offset:    cmd.Offset,
+				},
+			})
+		}
+
 		if cmd.FromTime.Unix() != 0 {
 			reader.SetOffsetAt(ctx, cmd.FromTime)
 		}
