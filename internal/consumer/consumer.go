@@ -91,6 +91,7 @@ func (c *Consumer) consumer(ctx context.Context) {
 			if e != nil {
 				return
 			}
+
 			c.asyncConsume(cp)
 		}(p)
 

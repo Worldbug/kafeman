@@ -26,9 +26,11 @@ type MessageHandler struct {
 	messages     chan models.Message
 	wg           *sync.WaitGroup
 	closeWG      *sync.WaitGroup
-	protoDecoder proto.ProtobufDecoder
+	protoDecoder *proto.ProtobufDecoder
 	outWriter    io.Writer
 	errWriter    io.Writer
+
+	currentTopic string
 }
 
 func (mg *MessageHandler) Close() {
@@ -38,8 +40,11 @@ func (mg *MessageHandler) Close() {
 func (mg *MessageHandler) Start() {
 	mg.closeWG.Add(1)
 	defer mg.closeWG.Done()
-	for m := range mg.messages {
-		mg.handle(m)
+	for {
+		select {
+		case m := <-mg.messages:
+			mg.handle(m)
+		}
 	}
 }
 
@@ -57,11 +62,20 @@ func (mg *MessageHandler) Handle(message models.Message) {
 }
 
 func (mg *MessageHandler) handle(message models.Message) {
+	mg.setProtoDecoder(message)
+
 	if protoType := mg.config.Topics[message.Topic].ProtoType; protoType != "" {
 		message = mg.handleProtoMessages(message, protoType)
 	}
 
 	mg.printMessage(message, mg.cmd.WithMeta)
+}
+
+func (mg *MessageHandler) setProtoDecoder(message models.Message) {
+	if mg.currentTopic != message.Topic {
+		mg.protoDecoder = proto.NewProtobufDecoder(mg.config.Topics[message.Topic].ProtoPaths)
+		mg.currentTopic = message.Topic
+	}
 }
 
 func (mg *MessageHandler) Stop() {
