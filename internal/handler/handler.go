@@ -1,22 +1,34 @@
 package handler
 
 import (
-	"fmt"
+	"io"
+	"kafeman/internal/config"
 	"kafeman/internal/models"
+	"kafeman/internal/proto"
+	"os"
 	"sync"
 )
 
-func NewMessageHandler(wg *sync.WaitGroup) *MessageHandler {
+func NewMessageHandler(wg *sync.WaitGroup, config config.Config, cmd models.ConsumeCommand) *MessageHandler {
 	return &MessageHandler{
-		wg:      wg,
-		closeWG: &sync.WaitGroup{},
+		wg:        wg,
+		closeWG:   &sync.WaitGroup{},
+		config:    config,
+		cmd:       cmd,
+		outWriter: os.Stdout,
+		errWriter: os.Stderr,
 	}
 }
 
 type MessageHandler struct {
-	messages chan models.Message
-	wg       *sync.WaitGroup
-	closeWG  *sync.WaitGroup
+	config       config.Config
+	cmd          models.ConsumeCommand
+	messages     chan models.Message
+	wg           *sync.WaitGroup
+	closeWG      *sync.WaitGroup
+	protoDecoder proto.ProtobufDecoder
+	outWriter    io.Writer
+	errWriter    io.Writer
 }
 
 func (mg *MessageHandler) Close() {
@@ -45,7 +57,11 @@ func (mg *MessageHandler) Handle(message models.Message) {
 }
 
 func (mg *MessageHandler) handle(message models.Message) {
-	fmt.Println(message)
+	if protoType := mg.config.Topics[message.Topic].ProtoType; protoType != "" {
+		message = mg.handleProtoMessages(message, protoType)
+	}
+
+	mg.printMessage(message, mg.cmd.WithMeta)
 }
 
 func (mg *MessageHandler) Stop() {

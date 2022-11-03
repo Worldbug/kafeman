@@ -91,14 +91,14 @@ func (c *Consumer) consumer(ctx context.Context) {
 			if e != nil {
 				return
 			}
-			c.FFFF(cp)
+			c.asyncConsume(cp)
 		}(p)
 
 	}
 
 }
 
-func (c *Consumer) FFFF(cp sarama.PartitionConsumer) error {
+func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 	defer c.handler.Close()
 	left := c.command.MessagesCount
 
@@ -114,7 +114,7 @@ func (c *Consumer) FFFF(cp sarama.PartitionConsumer) error {
 			if !c.command.Follow {
 				lastOffset := cp.HighWaterMarkOffset()
 				currentOffset := msg.Offset
-				if lastOffset-currentOffset-1 == 0 {
+				if lastOffset-currentOffset == 0 {
 					return nil
 				}
 
@@ -158,14 +158,13 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 	defer c.handler.Close()
 	left := c.command.MessagesCount
 
-	// TODO: offset per partition
-	session.ResetOffset(c.command.Topic, claim.Partition(), c.command.Offset, "")
-
 	for {
 		select {
+		case <-session.Context().Done():
+			return nil
 		case msg, ok := <-claim.Messages():
 			if !ok {
-				return nil
+				continue
 			}
 
 			message := models.MessageFromSarama(msg)

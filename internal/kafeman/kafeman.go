@@ -2,14 +2,10 @@ package kafeman
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"io"
 	"kafeman/internal/config"
-	"kafeman/internal/models"
 	"kafeman/internal/proto"
 	"sort"
-	"strings"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -38,45 +34,6 @@ type kafeman struct {
 	inReader  io.Reader
 
 	protoDecoder proto.ProtobufDecoder
-}
-
-// TODO: rename
-func (k *kafeman) handleProtoMessages(message models.Message, protoType string) models.Message {
-	data, err := k.protoDecoder.DecodeProto(message.Value, protoType)
-	if err != nil {
-		// TODO: вынести наверх
-		fmt.Fprintln(k.errWriter, err)
-
-		return message
-	}
-
-	message.Value = data
-	return message
-}
-
-func (k *kafeman) printMessage(message models.Message, printMeta bool) {
-	if !printMeta {
-		fmt.Fprintln(k.outWriter, string(message.Value))
-		return
-	}
-
-	k.Print(message)
-}
-
-// TODO: Поправить этот костыль
-func (k *kafeman) Print(data models.Message) {
-	if isJSON(data.Value) {
-		ms := messageToPrintable(data)
-		v := ms.Value
-		ms.Value = ""
-		msg, _ := json.Marshal(ms)
-		m := strings.Replace(string(msg), `"value":""`, fmt.Sprintf(`"value":%v`, v), 1)
-		fmt.Fprintln(k.outWriter, m)
-		return
-	}
-
-	msg, _ := json.Marshal(messageToPrintable(data))
-	fmt.Fprintln(k.outWriter, string(msg))
 }
 
 func (k *kafeman) ListTopics(ctx context.Context) []Topic {
