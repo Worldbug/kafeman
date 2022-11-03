@@ -55,7 +55,7 @@ var ConsumeCMD = &cobra.Command{
 		topic := args[0]
 
 		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
-		pk.ConsumeV2(cmd.Context(), models.ConsumeCommand{
+		pk.Consume(cmd.Context(), models.ConsumeCommand{
 			Topic:          topic,
 			ConsumerGroup:  groupIDFlag,
 			Partitions:     partitionsFlag,

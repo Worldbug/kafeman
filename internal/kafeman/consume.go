@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"kafeman/internal/consumer"
+	"kafeman/internal/handler"
 	"kafeman/internal/models"
 	"kafeman/internal/proto"
 	"sync"
@@ -12,13 +13,16 @@ import (
 )
 
 func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) {
-	output := make(chan models.Message)
-	c := consumer.NewSaramaConsuemr(output, k.config, cmd)
+	wg := &sync.WaitGroup{}
+
+	h := handler.NewMessageHandler(wg)
+	c := consumer.NewSaramaConsuemr(h, k.config, cmd)
 
 	c.StartConsume(ctx)
-	for m := range output {
-		fmt.Println(m)
-	}
+
+	go h.Start()
+	wg.Wait()
+	h.Stop()
 }
 
 func (k *kafeman) ConsumeV2(ctx context.Context, cmd models.ConsumeCommand) {

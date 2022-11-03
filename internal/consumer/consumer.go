@@ -3,27 +3,28 @@ package consumer
 import (
 	"context"
 	"kafeman/internal/config"
+	"kafeman/internal/handler"
 	"kafeman/internal/models"
 
 	"github.com/Shopify/sarama"
 )
 
 func NewSaramaConsuemr(
-	output chan<- models.Message,
+	handler *handler.MessageHandler,
 	config config.Config,
 	command models.ConsumeCommand,
 ) *Consumer {
 	return &Consumer{
-		output:  output,
 		config:  config,
 		command: command,
+		handler: handler,
 	}
 }
 
 type Consumer struct {
-	output  chan<- models.Message
 	config  config.Config
 	command models.ConsumeCommand
+	handler *handler.MessageHandler
 }
 
 func (c *Consumer) StartConsume(ctx context.Context) {
@@ -48,7 +49,20 @@ func (c *Consumer) consumerGroup(ctx context.Context) {
 	}
 	// TODO: defer close
 
-	cg.Consume(ctx, []string{topic}, c)
+	cli, err := sarama.NewClient(c.config.GetCurrentCluster().Brokers, saramaConfig)
+	if err != nil {
+		// TODO: ERROR handling
+		return
+	}
+
+	partitions, err := cli.Partitions(topic)
+	if err != nil {
+		// TODO: ERROR handling
+		return
+	}
+
+	c.handler.InitInput(len(partitions))
+	go cg.Consume(ctx, []string{topic}, c)
 }
 
 func (c *Consumer) consumer(ctx context.Context) {
@@ -68,11 +82,52 @@ func (c *Consumer) consumer(ctx context.Context) {
 		return
 	}
 
+	c.handler.InitInput(len(partitions))
+
 	for _, p := range partitions {
 		// TODO: set offset per partition mode
-		_, e := consumer.ConsumePartition(topic, p, c.command.Offset)
-		if e != nil {
-			continue
+		go func(partition int32) {
+			cp, e := consumer.ConsumePartition(topic, partition, c.command.Offset)
+			if e != nil {
+				return
+			}
+			c.FFFF(cp)
+		}(p)
+
+	}
+
+}
+
+func (c *Consumer) FFFF(cp sarama.PartitionConsumer) error {
+	defer c.handler.Close()
+	left := c.command.MessagesCount
+
+	for {
+		select {
+		case msg, ok := <-cp.Messages():
+			if !ok {
+				return nil
+			}
+			message := models.MessageFromSarama(msg)
+			c.handler.Handle(message)
+
+			if !c.command.Follow {
+				lastOffset := cp.HighWaterMarkOffset()
+				currentOffset := msg.Offset
+				if lastOffset-currentOffset-1 == 0 {
+					return nil
+				}
+
+			}
+
+			if c.command.MessagesCount != 0 {
+				left--
+			}
+
+			if c.command.MessagesCount != 0 && left == 0 {
+				return nil
+			}
+
 		}
 	}
 
@@ -82,8 +137,12 @@ func (c *Consumer) getSaramaConfig() *sarama.Config {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Version = sarama.V1_1_0_0
 	saramaConfig.Producer.Return.Successes = true
-	saramaConfig.Consumer.Offsets.Initial = c.command.Offset
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.command.CommitMessages
+
+	if c.command.Offset == sarama.OffsetNewest || c.command.Offset == sarama.OffsetOldest {
+		saramaConfig.Consumer.Offsets.Initial = c.command.Offset
+	}
+
 	return saramaConfig
 }
 
@@ -96,7 +155,11 @@ func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	defer c.handler.Close()
 	left := c.command.MessagesCount
+
+	// TODO: offset per partition
+	session.ResetOffset(c.command.Topic, claim.Partition(), c.command.Offset, "")
 
 	for {
 		select {
@@ -106,12 +169,12 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			}
 
 			message := models.MessageFromSarama(msg)
-			c.output <- message
+			c.handler.Handle(message)
 
 			if !c.command.Follow {
 				lastOffset := claim.HighWaterMarkOffset()
 				currentOffset := msg.Offset
-				if lastOffset-currentOffset == 0 {
+				if lastOffset-currentOffset-1 == 0 {
 					return nil
 				}
 
