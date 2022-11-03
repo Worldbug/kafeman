@@ -2,6 +2,8 @@ package kafeman
 
 import (
 	"time"
+
+	"github.com/Shopify/sarama"
 )
 
 type Message struct {
@@ -15,6 +17,18 @@ type Message struct {
 	Offset    int64
 	Key       []byte
 	Value     []byte
+}
+
+// TODO: headers
+func messageFromSarama(msg *sarama.ConsumerMessage) Message {
+	return Message{
+		Timestamp: msg.Timestamp,
+		Topic:     msg.Topic,
+		Partition: msg.Partition,
+		Offset:    msg.Offset,
+		Key:       msg.Key,
+		Value:     msg.Value,
+	}
 }
 
 type PrintableMessage struct {

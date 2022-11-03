@@ -26,6 +26,12 @@ func (k *kafeman) ConsumeV2(ctx context.Context, cmd ConsumeCommand) {
 		wg.Add(1)
 	}
 
+	wg.Add(1)
+	if cmd.ConsumerGroup != "" {
+		k.getConsumerGroup(cmd.ConsumerGroup)
+	}
+	wg.Wait()
+
 	topicPartitions := toIntSlice(cmd.Partitions)
 	consumePartitions := k.partitions(topicPartitions, cmd.Topic)
 	ch := make(chan Message, len(consumePartitions))
