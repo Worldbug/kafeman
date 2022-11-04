@@ -42,7 +42,11 @@ func (mg *MessageHandler) Start() {
 	defer mg.closeWG.Done()
 	for {
 		select {
-		case m := <-mg.messages:
+		case m, ok := <-mg.messages:
+			if !ok {
+				return
+			}
+
 			mg.handle(m)
 		}
 	}

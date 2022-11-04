@@ -2,9 +2,11 @@ package consumer
 
 import (
 	"context"
+	"kafeman/internal/admin"
 	"kafeman/internal/config"
 	"kafeman/internal/handler"
 	"kafeman/internal/models"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -82,12 +84,20 @@ func (c *Consumer) consumer(ctx context.Context) {
 		return
 	}
 
+	adm := admin.NewAdmin(c.config)
+
 	c.handler.InitInput(len(partitions))
 
 	for _, p := range partitions {
 		// TODO: set offset per partition mode
 		go func(partition int32) {
-			cp, e := consumer.ConsumePartition(topic, partition, c.command.Offset)
+			offset := c.command.Offset
+
+			if c.command.FromTime.UnixNano() != 0 {
+				offset = adm.GetOffsetByTime(ctx, partition, topic, c.command.FromTime)
+			}
+
+			cp, e := consumer.ConsumePartition(topic, partition, offset)
 			if e != nil {
 				return
 			}
@@ -115,6 +125,7 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 			if !c.command.Follow {
 				lastOffset := cp.HighWaterMarkOffset()
 				currentOffset := msg.Offset
+				// TODO: correct offset
 				if lastOffset-currentOffset == 0 {
 					return nil
 				}
@@ -191,4 +202,16 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		}
 	}
 
+}
+
+// TODO: move to admin module
+func (c *Consumer) GetOffsetByTime(ctx context.Context, topic string, partition int32, ts time.Time) (int64, error) {
+	addrs := c.config.GetCurrentCluster().Brokers
+	conf := c.getSaramaConfig()
+	cli, err := sarama.NewClient(addrs, conf)
+	if err != nil {
+		return sarama.OffsetOldest, err
+	}
+
+	return cli.GetOffset(topic, partition, ts.UTC().UnixNano())
 }

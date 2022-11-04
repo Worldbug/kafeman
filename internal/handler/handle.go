@@ -14,7 +14,6 @@ func (mg *MessageHandler) handleProtoMessages(message models.Message, protoType 
 	if err != nil {
 		// TODO: вынести наверх
 		fmt.Fprintln(mg.errWriter, err)
-
 		return message
 	}
 

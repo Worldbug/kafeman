@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"kafeman/internal/config"
+	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/segmentio/kafka-go"
 )
 
 func NewAdmin(config config.Config) *Admin {
@@ -18,7 +20,21 @@ type Admin struct {
 	config config.Config
 }
 
-// func (a *Admin) GetOffsetByTimeStam
+func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic string, ts time.Time) int64 {
+	reader := kafka.NewReader(kafka.ReaderConfig{
+		Brokers: a.config.GetCurrentCluster().Brokers,
+		Topic:   topic,
+	})
+
+	err := reader.SetOffsetAt(ctx, ts)
+	if err != nil {
+		// TODO: handle
+		return -1
+	}
+
+	return reader.Offset()
+
+}
 
 // TODO: work to slow
 func (a *Admin) ListTopics(ctx context.Context) []string {
