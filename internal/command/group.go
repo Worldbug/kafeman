@@ -25,19 +25,19 @@ func init() {
 	RootCMD.AddCommand(GroupsCMD)
 
 	GroupCMD.AddCommand(GroupsCMD)
-	GroupCMD.AddCommand(groupLsCmd)
-	GroupCMD.AddCommand(groupDescribeCmd)
-	GroupCMD.AddCommand(groupDeleteCmd)
-	GroupCMD.AddCommand(groupCommitCMD)
+	GroupCMD.AddCommand(GroupLsCMD)
+	GroupCMD.AddCommand(GroupDescribeCMD)
+	GroupCMD.AddCommand(GroupDeleteCMD)
+	GroupCMD.AddCommand(GroupCommitCMD)
 
-	groupDescribeCmd.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
-	groupDescribeCmd.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
-	groupCommitCMD.Flags().BoolVar(&fromJsonFlag, "json", false, "Parse json from std and set values")
-	groupCommitCMD.Flags().BoolVar(&allPartitionsFlag, "all-partitions", false, "apply to all partitions")
-	groupCommitCMD.Flags().IntVar(&partitionFag, "p", 0, "partition")
-	groupCommitCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
-	groupCommitCMD.Flags().StringVarP(&topicFlag, "topic", "t", "", "topic to set offset")
-	groupCommitCMD.Flags().BoolVar(&noConfirmFlag, "y", false, "Do not prompt for confirmation")
+	GroupDescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+	GroupDescribeCMD.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
+	GroupCommitCMD.Flags().BoolVar(&fromJsonFlag, "json", false, "Parse json from std and set values")
+	GroupCommitCMD.Flags().BoolVar(&allPartitionsFlag, "all-partitions", false, "apply to all partitions")
+	GroupCommitCMD.Flags().IntVar(&partitionFag, "p", 0, "partition")
+	GroupCommitCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
+	GroupCommitCMD.Flags().StringVarP(&topicFlag, "topic", "t", "", "topic to set offset")
+	GroupCommitCMD.Flags().BoolVar(&noConfirmFlag, "y", false, "Do not prompt for confirmation")
 }
 
 var GroupCMD = &cobra.Command{
@@ -48,10 +48,10 @@ var GroupCMD = &cobra.Command{
 var GroupsCMD = &cobra.Command{
 	Use:   "groups",
 	Short: "List groups",
-	Run:   groupLsCmd.Run,
+	Run:   GroupLsCMD.Run,
 }
 
-var groupDeleteCmd = &cobra.Command{
+var GroupDeleteCMD = &cobra.Command{
 	Use:               "delete",
 	Short:             "Delete group",
 	Args:              cobra.MaximumNArgs(1),
@@ -63,6 +63,7 @@ var groupDeleteCmd = &cobra.Command{
 		if len(args) == 1 {
 			group = args[0]
 		}
+
 		err := k.DeleteGroup(group)
 		if err != nil {
 			errorExit("Could not delete consumer group %v: %v\n", group, err.Error())
@@ -73,7 +74,7 @@ var groupDeleteCmd = &cobra.Command{
 	},
 }
 
-var groupLsCmd = &cobra.Command{
+var GroupLsCMD = &cobra.Command{
 	Use:   "ls",
 	Short: "List groups",
 	Args:  cobra.NoArgs,
@@ -107,7 +108,7 @@ var groupLsCmd = &cobra.Command{
 	},
 }
 
-var groupDescribeCmd = &cobra.Command{
+var GroupDescribeCMD = &cobra.Command{
 	Use:               "describe",
 	Short:             "Describe consumer group",
 	Args:              cobra.ExactArgs(1),
@@ -126,7 +127,7 @@ var groupDescribeCmd = &cobra.Command{
 	}}
 
 // TODO:
-var groupCommitCMD = &cobra.Command{
+var GroupCommitCMD = &cobra.Command{
 	Use:   "commit",
 	Short: "Set offset for given consumer group",
 	Long:  "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
@@ -220,12 +221,3 @@ func validGroupArgs(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 	return groupList, cobra.ShellCompDirectiveNoFileComp
 }
-
-/*
-      --all-partitions    apply to all partitions
-  -h, --help              help for commit
-      --noconfirm         Do not prompt for confirmation
-  -o, --offset string     offset to commit
-  -p, --partition int32   partition
-  -t, --topic string      topic
-*/

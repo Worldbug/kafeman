@@ -6,7 +6,6 @@ import (
 	"kafeman/internal/config"
 	"kafeman/internal/handler"
 	"kafeman/internal/models"
-	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -202,16 +201,4 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		}
 	}
 
-}
-
-// TODO: move to admin module
-func (c *Consumer) GetOffsetByTime(ctx context.Context, topic string, partition int32, ts time.Time) (int64, error) {
-	addrs := c.config.GetCurrentCluster().Brokers
-	conf := c.getSaramaConfig()
-	cli, err := sarama.NewClient(addrs, conf)
-	if err != nil {
-		return sarama.OffsetOldest, err
-	}
-
-	return cli.GetOffset(topic, partition, ts.UTC().UnixNano())
 }

@@ -23,11 +23,11 @@ func init() {
 	// ConfigCMD.AddCommand(configLsCmd)
 	// ConfigCMD.AddCommand(configAddClusterCmd)
 	// ConfigCMD.AddCommand(configRemoveClusterCmd)
-	ConfigCMD.AddCommand(configSelectCluster)
+	ConfigCMD.AddCommand(ConfigSelectCluster)
 	ConfigCMD.AddCommand(ConfigCurrentContextCMD)
 	// ConfigCMD.AddCommand(configAddEventhub)
 
-	ConfigCMD.AddCommand(ExportConfig)
+	ConfigCMD.AddCommand(ConfigInitCMD)
 
 }
 
@@ -45,7 +45,7 @@ var ConfigCurrentContextCMD = &cobra.Command{
 	},
 }
 
-var configSelectCluster = &cobra.Command{
+var ConfigSelectCluster = &cobra.Command{
 	Use:     "select-cluster",
 	Aliases: []string{"ls"},
 	Short:   "Interactively select a cluster",
@@ -84,8 +84,8 @@ var configSelectCluster = &cobra.Command{
 	},
 }
 
-var ExportConfig = &cobra.Command{
-	Use:   "export",
+var ConfigInitCMD = &cobra.Command{
+	Use:   "init",
 	Short: "Create empty config and export to file (default ~/.kafeman/config.yml)",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.ExportConfig(configPath)
