@@ -54,7 +54,7 @@ var ConsumeCMD = &cobra.Command{
 		offset := getOffsetFromFlag()
 		topic := args[0]
 
-		pk := kafeman.Newkafeman(conf, outWriter, errWriter)
+		pk := kafeman.Newkafeman(conf)
 		pk.Consume(cmd.Context(), models.ConsumeCommand{
 			Topic:          topic,
 			ConsumerGroup:  groupIDFlag,
@@ -79,7 +79,7 @@ func parseTime(str string) time.Time {
 }
 
 func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	k := kafeman.Newkafeman(conf, nil, nil)
+	k := kafeman.Newkafeman(conf)
 	topics := k.ListTopics(cmd.Context())
 
 	topicList := make([]string, 0, len(topics))

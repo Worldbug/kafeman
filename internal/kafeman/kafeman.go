@@ -5,24 +5,26 @@ import (
 	"io"
 	"kafeman/internal/config"
 	"kafeman/internal/proto"
+	"os"
 	"sort"
 
 	"github.com/segmentio/kafka-go"
 )
 
+// TODO: refactor
+var (
+	outWriter = os.Stdout
+	errWriter = os.Stderr
+)
+
 func Newkafeman(
 	config config.Config,
-	outWriter io.Writer,
-	errWriter io.Writer,
-	// inReader io.Reader,
 ) *kafeman {
 
 	return &kafeman{
 		config:    config,
 		outWriter: outWriter,
 		errWriter: errWriter,
-		// TODO: remove
-		// inReader  : inReader,
 	}
 }
 

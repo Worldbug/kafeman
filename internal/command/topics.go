@@ -58,7 +58,7 @@ var DescribeCMD = &cobra.Command{
 	Use:   "describe",
 	Short: "Describe topic info",
 	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
+		k := kafeman.Newkafeman(conf)
 		k.DescribeTopic(cmd.Context(), args[0])
 		// cli := kafka.Client{
 		// 	Addr: kafka.TCP(conf.GetCurrentCluster().Brokers...),
@@ -89,7 +89,7 @@ var LsTopicsCMD = &cobra.Command{
 	Short:   "List topics",
 	Args:    cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
+		k := kafeman.Newkafeman(conf)
 		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
 
 		if !noHeaderFlag {

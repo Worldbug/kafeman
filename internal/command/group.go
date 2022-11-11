@@ -57,7 +57,7 @@ var GroupDeleteCMD = &cobra.Command{
 	Args:              cobra.MaximumNArgs(1),
 	ValidArgsFunction: validGroupArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
+		k := kafeman.Newkafeman(conf)
 
 		var group string
 		if len(args) == 1 {
@@ -79,7 +79,7 @@ var GroupLsCMD = &cobra.Command{
 	Short: "List groups",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
+		k := kafeman.Newkafeman(conf)
 		groupList, err := k.GetGroupsList(cmd.Context())
 		if err != nil {
 			fmt.Println(err)
@@ -114,7 +114,7 @@ var GroupDescribeCMD = &cobra.Command{
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: validGroupArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
+		k := kafeman.Newkafeman(conf)
 		group := k.DescribeGroup(cmd.Context(), args[0])
 
 		if asJsonFlag {
@@ -133,7 +133,7 @@ var GroupCommitCMD = &cobra.Command{
 	Long:  "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf, nil, nil)
+		k := kafeman.Newkafeman(conf)
 		group := args[0]
 		offsets := make([]kafeman.Offset, 0)
 		partitions := make([]int, 0)
@@ -213,7 +213,7 @@ func textGroupDescribe(group kafeman.Group) {
 }
 
 func validGroupArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	k := kafeman.Newkafeman(conf, nil, nil)
+	k := kafeman.Newkafeman(conf)
 	groupList, err := k.GetGroupsList(cmd.Context())
 	if err != nil {
 		fmt.Fprintln(errWriter, err)
