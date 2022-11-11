@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"kafeman/internal/kafeman"
 	"text/tabwriter"
-	"time"
 
-	"github.com/segmentio/kafka-go"
 	"github.com/spf13/cobra"
 )
 
@@ -60,19 +58,21 @@ var DescribeCMD = &cobra.Command{
 	Use:   "describe",
 	Short: "Describe topic info",
 	Run: func(cmd *cobra.Command, args []string) {
-		cli := kafka.Client{
-			Addr: kafka.TCP(conf.GetCurrentCluster().Brokers...),
-		}
-		topic := args[0]
-		resp, err := cli.ListOffsets(cmd.Context(), &kafka.ListOffsetsRequest{
-			Topics: map[string][]kafka.OffsetRequest{
-				topic: {
-					{Partition: 0, Timestamp: time.Now().Unix()},
-				},
-			},
-		})
+		k := kafeman.Newkafeman(conf, nil, nil)
+		k.DescribeTopic(cmd.Context(), args[0])
+		// cli := kafka.Client{
+		// 	Addr: kafka.TCP(conf.GetCurrentCluster().Brokers...),
+		// }
+		// topic := args[0]
+		// resp, err := cli.ListOffsets(cmd.Context(), &kafka.ListOffsetsRequest{
+		// 	Topics: map[string][]kafka.OffsetRequest{
+		// 		topic: {
+		// 			{Partition: 0, Timestamp: time.Now().Unix()},
+		// 		},
+		// 	},
+		// })
 
-		fmt.Fprintln(outWriter, resp, err)
+		// fmt.Fprintln(outWriter, resp, err)
 
 	},
 }

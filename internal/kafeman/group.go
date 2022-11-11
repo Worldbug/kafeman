@@ -34,6 +34,7 @@ func (k *kafeman) GetGroupsList(ctx context.Context) ([]string, error) {
 	return groupsList, err
 }
 
+// TODO: rename
 func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]GroupInfo, error) {
 	cli := k.client()
 

@@ -4,6 +4,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
+// TODO: remove
 // TODO: on error
 func (k *kafeman) getSaramaAdmin() sarama.ClusterAdmin {
 	var admin sarama.ClusterAdmin
