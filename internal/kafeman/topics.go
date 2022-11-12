@@ -2,10 +2,11 @@ package kafeman
 
 import (
 	"context"
+	"kafeman/internal/models"
 	"sync"
 )
 
-func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) Topic {
+func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) models.Topic {
 	topics := k.ListTopics(ctx)
 
 	for _, t := range topics {
@@ -14,16 +15,17 @@ func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) Topic {
 		}
 	}
 
-	return Topic{}
+	return models.Topic{}
 }
 
+// TODO: not work
 func (k *kafeman) DescribeTopic(ctx context.Context, topic string) {
 	gl, err := k.GetGroupsList(ctx)
 	if err != nil {
 		return
 	}
 
-	memrs := make([]Member, 0)
+	memrs := make([]models.Member, 0)
 	wg := &sync.WaitGroup{}
 
 	for _, g := range gl {

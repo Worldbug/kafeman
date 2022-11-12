@@ -2,8 +2,8 @@ package kafeman
 
 import (
 	"context"
-	"fmt"
 	"kafeman/internal/admin"
+	"kafeman/internal/models"
 	"sync"
 
 	"github.com/segmentio/kafka-go"
@@ -98,113 +98,15 @@ func (k *kafeman) GetOffsetsForConsumer(ctx context.Context, group, topic string
 	return offsets, err
 }
 
-// TODO: refactor
-func (k *kafeman) DescribeGroup(ctx context.Context, group string) Group {
-	gd := NewGroup()
-	cli := k.client()
-
-	groupsDescribe, err := cli.DescribeGroups(ctx, &kafka.DescribeGroupsRequest{
-		GroupIDs: []string{group},
-	})
-	if err != nil {
-		return gd
-	}
-
-	offsetsMap := make(map[string]map[int]int64)
-	mu := &sync.Mutex{}
-	groupTopis := make(map[string][]int)
-
-	wg := &sync.WaitGroup{}
-
-	for _, group := range groupsDescribe.Groups {
-		gd.GroupID = group.GroupID
-		gd.State = group.GroupState
-
-		for _, member := range group.Members {
-			m := Member{
-				Assignments: make([]Assignment, 0),
-				Host:        member.ClientHost,
-				ID:          member.MemberID,
-			}
-
-			for _, gmt := range member.MemberAssignments.Topics {
-				if _, ok := groupTopis[gmt.Topic]; !ok {
-					groupTopis[gmt.Topic] = make([]int, 0)
-				}
-
-				offsetsMap[gmt.Topic] = make(map[int]int64)
-				wg.Add(1)
-				go k.asyncGetLastOffset(ctx, wg, mu, offsetsMap, gmt.Topic, gmt.Partitions...)
-
-				groupTopis[gmt.Topic] = append(groupTopis[gmt.Topic], gmt.Partitions...)
-				m.Assignments = append(m.Assignments, Assignment{
-					Topic:      gmt.Topic,
-					Partitions: gmt.Partitions,
-				})
-			}
-
-			gd.Members = append(gd.Members, m)
-		}
-
-		offsets, err := cli.OffsetFetch(ctx, &kafka.OffsetFetchRequest{
-			GroupID: gd.GroupID,
-			Topics:  groupTopis,
-		})
-		if err != nil {
-			continue
-		}
-
-		wg.Wait()
-		for topic, offsets := range offsets.Topics {
-			gd.Offsets[topic] = make([]Offset, 0)
-
-			for _, ofp := range offsets {
-				gd.Offsets[topic] = append(gd.Offsets[topic], Offset{
-					Partition:      int32(ofp.Partition),
-					Offset:         ofp.CommittedOffset,
-					HightWatermark: offsetsMap[topic][ofp.Partition],
-					Lag:            offsetsMap[topic][ofp.Partition] - ofp.CommittedOffset,
-				})
-			}
-		}
-
-	}
-
-	return gd
+func (k *kafeman) DescribeGroup(ctx context.Context, group string) models.Group {
+	return admin.NewAdmin(k.config).DescribeGroup(ctx, group)
 }
 
-func (k *kafeman) fetchLastOffset(ctx context.Context, topic string, partition int) Offset {
-	cli := k.client()
-	resp, err := cli.Fetch(ctx, &kafka.FetchRequest{
-		Topic:     topic,
-		Partition: partition,
-		Offset:    -1,
-	})
-	if err != nil {
-		fmt.Println(err)
-		return Offset{}
-	}
-
-	return Offset{
-		Partition:      int32(resp.Partition),
-		HightWatermark: resp.HighWatermark,
-	}
-}
-
-func (k *kafeman) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) {
-	defer wg.Done()
-	for _, partition := range parts {
-		offset := k.fetchLastOffset(ctx, topic, partition)
-		mu.Lock()
-		offsetMap[topic][int(offset.Partition)] = offset.HightWatermark
-		mu.Unlock()
-	}
-}
 func (k *kafeman) DeleteGroup(group string) error {
 	return admin.NewAdmin(k.config).DeleteGroup(group)
 }
 
-func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []Offset) {
+func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []models.Offset) {
 	for _, p := range partitions {
 		r := kafka.NewReader(kafka.ReaderConfig{
 			GroupID:     group,

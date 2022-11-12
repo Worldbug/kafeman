@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"kafeman/internal/kafeman"
+	"kafeman/internal/models"
 	"sort"
 	"text/tabwriter"
 
@@ -134,11 +135,11 @@ var GroupCommitCMD = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 		group := args[0]
-		offsets := make([]kafeman.Offset, 0)
+		offsets := make([]models.Offset, 0)
 		partitions := make([]int, 0)
 
 		if fromJsonFlag {
-			// TODO:
+
 		}
 
 		if allPartitionsFlag {
@@ -146,7 +147,7 @@ var GroupCommitCMD = &cobra.Command{
 			o := getOffsetFromFlag()
 
 			for i := t.Partitions - 1; i >= 0; i-- {
-				offsets = append(offsets, kafeman.Offset{
+				offsets = append(offsets, models.Offset{
 					Partition: int32(i),
 					Offset:    o,
 				})
@@ -162,7 +163,7 @@ var GroupCommitCMD = &cobra.Command{
 	},
 }
 
-func jsonGroupDescribe(group kafeman.Group) {
+func jsonGroupDescribe(group models.Group) {
 	var output []byte
 	if printAllFlag {
 		output, _ = json.Marshal(group)
@@ -174,7 +175,7 @@ func jsonGroupDescribe(group kafeman.Group) {
 	fmt.Fprintln(outWriter, string(output))
 }
 
-func textGroupDescribe(group kafeman.Group) {
+func textGroupDescribe(group models.Group) {
 	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
 	defer w.Flush()
 

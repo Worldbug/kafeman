@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"kafeman/internal/config"
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -56,6 +57,16 @@ func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
 	}
 
 	return clusterAdmin
+}
+
+func (a *Admin) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) {
+	defer wg.Done()
+	for _, partition := range parts {
+		offset := a.fetchLastOffset(ctx, topic, partition)
+		mu.Lock()
+		offsetMap[topic][int(offset.Partition)] = offset.HightWatermark
+		mu.Unlock()
+	}
 }
 
 // TODO: work to slow

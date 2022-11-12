@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"kafeman/internal/config"
+	"kafeman/internal/models"
 	"kafeman/internal/proto"
 	"os"
 	"sort"
@@ -32,9 +33,9 @@ type kafeman struct {
 	protoDecoder proto.ProtobufDecoder
 }
 
-func (k *kafeman) ListTopics(ctx context.Context) []Topic {
+func (k *kafeman) ListTopics(ctx context.Context) []models.Topic {
 	if len(k.config.GetCurrentCluster().Brokers[0]) < 1 {
-		return []Topic{}
+		return []models.Topic{}
 	}
 
 	conn, err := kafka.Dial("tcp", k.config.GetCurrentCluster().Brokers[0])
@@ -48,7 +49,7 @@ func (k *kafeman) ListTopics(ctx context.Context) []Topic {
 		panic(err.Error())
 	}
 
-	topics := map[string]Topic{}
+	topics := map[string]models.Topic{}
 
 	for _, p := range partitions {
 		if info, ok := topics[p.Topic]; ok {
@@ -58,14 +59,14 @@ func (k *kafeman) ListTopics(ctx context.Context) []Topic {
 			continue
 		}
 
-		topics[p.Topic] = Topic{
+		topics[p.Topic] = models.Topic{
 			Name:       p.Topic,
 			Partitions: 1,
 			Replicas:   len(p.Replicas),
 		}
 	}
 
-	sortedTopics := make([]Topic, len(topics))
+	sortedTopics := make([]models.Topic, len(topics))
 
 	i := 0
 	for _, topic := range topics {
