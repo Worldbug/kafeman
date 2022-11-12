@@ -126,7 +126,6 @@ var GroupDescribeCMD = &cobra.Command{
 
 	}}
 
-// TODO:
 var GroupCommitCMD = &cobra.Command{
 	Use:   "commit",
 	Short: "Set offset for given consumer group",
@@ -139,7 +138,7 @@ var GroupCommitCMD = &cobra.Command{
 		partitions := make([]int, 0)
 
 		if fromJsonFlag {
-
+			// TODO:
 		}
 
 		if allPartitionsFlag {

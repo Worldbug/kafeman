@@ -118,17 +118,16 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 			if !ok {
 				return nil
 			}
+
 			message := models.MessageFromSarama(msg)
 			c.handler.Handle(message)
 
-			if !c.command.Follow {
+			if !c.command.Follow && left == 0 {
 				lastOffset := cp.HighWaterMarkOffset()
 				currentOffset := msg.Offset
-				// TODO: correct offset
-				if lastOffset-currentOffset == 0 {
+				if lastOffset-currentOffset-1 == 0 {
 					return nil
 				}
-
 			}
 
 			if c.command.MessagesCount != 0 {

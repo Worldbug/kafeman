@@ -8,11 +8,9 @@ import (
 	"time"
 )
 
-// TODO: rename
 func (mg *MessageHandler) handleProtoMessages(message models.Message, protoType string) models.Message {
 	data, err := mg.protoDecoder.DecodeProto(message.Value, protoType)
 	if err != nil {
-		// TODO: вынести наверх
 		fmt.Fprintln(mg.errWriter, err)
 		return message
 	}
@@ -30,7 +28,6 @@ func (mg *MessageHandler) printMessage(message models.Message, printMeta bool) {
 	mg.Print(message)
 }
 
-// TODO: Поправить этот костыль
 func (mg *MessageHandler) Print(data models.Message) {
 	if isJSON(data.Value) {
 		ms := messageToPrintable(data)

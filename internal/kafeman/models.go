@@ -27,7 +27,6 @@ type Member struct {
 	Host        string       `json:"host"`
 	ID          string       `json:"id"`
 	Assignments []Assignment `json:"assignments"`
-	// MetaData
 }
 
 type Assignment struct {
@@ -40,5 +39,4 @@ type Offset struct {
 	Offset         int64 `json:"offset"`
 	HightWatermark int64 `json:"hight_watermark"`
 	Lag            int64 `json:"lag"`
-	// Metadata
 }

@@ -11,20 +11,14 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-// TODO: refactor
-var (
-	outWriter = os.Stdout
-	errWriter = os.Stderr
-)
-
 func Newkafeman(
 	config config.Config,
 ) *kafeman {
 
 	return &kafeman{
 		config:    config,
-		outWriter: outWriter,
-		errWriter: errWriter,
+		outWriter: os.Stdout,
+		errWriter: os.Stderr,
 	}
 }
 

@@ -35,7 +35,6 @@ func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic stri
 
 	err := reader.SetOffsetAt(ctx, ts)
 	if err != nil {
-		// TODO: handle
 		return -1
 	}
 
@@ -49,12 +48,10 @@ func (a *Admin) client() kafka.Client {
 	}
 }
 
-// TODO: on error
 func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
 	var admin sarama.ClusterAdmin
 	clusterAdmin, err := sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, a.getSaramaConfig())
 	if err != nil {
-		// errorExit("Unable to get cluster admin: %v\n", err)
 		return admin
 	}
 
@@ -66,7 +63,6 @@ func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
 // 	addrs := a.config.GetCurrentCluster().Brokers
 // 	admin, err := sarama.NewClusterAdmin(addrs, a.getSaramaConfig())
 // 	if err != nil {
-// 		//TODO: err
 // 		return []string{}
 // 	}
 //

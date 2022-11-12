@@ -3,6 +3,7 @@ package kafeman
 import (
 	"context"
 	"fmt"
+	"kafeman/internal/admin"
 	"sync"
 
 	"github.com/segmentio/kafka-go"
@@ -200,8 +201,7 @@ func (k *kafeman) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu
 	}
 }
 func (k *kafeman) DeleteGroup(group string) error {
-	admin := k.getSaramaAdmin()
-	return admin.DeleteConsumerGroup(group)
+	return admin.NewAdmin(k.config).DeleteGroup(group)
 }
 
 func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []Offset) {
@@ -223,6 +223,3 @@ func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, parti
 
 	return
 }
-
-// TODO
-// func (k *kafeman) SetGroupOffsetBytime(ctx context.Context, group, topic string, partitions []Offset) {}
