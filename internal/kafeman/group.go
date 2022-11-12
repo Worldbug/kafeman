@@ -35,7 +35,7 @@ func (k *kafeman) GetGroupsList(ctx context.Context) ([]string, error) {
 	return groupsList, err
 }
 
-func (k *kafeman) ListGroups(ctx context.Context, groupList []string) ([]GroupInfo, error) {
+func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]GroupInfo, error) {
 	cli := k.client()
 
 	batches := batchesFromSlice(groupList, 20)

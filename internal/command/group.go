@@ -96,7 +96,7 @@ var GroupLsCMD = &cobra.Command{
 			fmt.Fprintf(w, "NAME\tSTATE\tCONSUMERS\t\n")
 		}
 
-		groupDescs, err := k.ListGroups(cmd.Context(), groupList)
+		groupDescs, err := k.DescribeGroups(cmd.Context(), groupList)
 		if err != nil {
 			errorExit("Unable to describe consumer groups: %v\n", err)
 		}
