@@ -10,9 +10,10 @@ kaf inspired cli for kafka management
 ### Supported messages types
 |state|type|
 | :---: | :---: |
-✅|protobuf
 ✅|json
+✅|protobuf
 ❌|message-pack
+❌|avro
 
 ### consume
 

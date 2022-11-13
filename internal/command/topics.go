@@ -30,7 +30,7 @@ func init() {
 	RootCMD.AddCommand(TopicCMD)
 	RootCMD.AddCommand(TopicsCMD)
 
-	TopicCMD.AddCommand(DescribeCMD)
+	// TopicCMD.AddCommand(DescribeCMD)
 	// TopicCMD.AddCommand(createTopicCmd)
 	// TopicCMD.AddCommand(deleteTopicCmd)
 	TopicCMD.AddCommand(LsTopicsCMD)
