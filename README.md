@@ -2,6 +2,8 @@
 
 kaf inspired cli for kafka management
 
+переливание данных из одного кластера в другой
+
 ### Legend
 ✅ Fully implemented \
 ❌ Not implemented \
