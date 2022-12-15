@@ -18,7 +18,6 @@ func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) models.Topic {
 	return models.Topic{}
 }
 
-// TODO: not work
 func (k *kafeman) DescribeTopic(ctx context.Context, topic string) models.TopicInfo {
 	topicInfo := models.NewTopicInfo()
 	topicInfo.TopicName = topic
@@ -27,9 +26,6 @@ func (k *kafeman) DescribeTopic(ctx context.Context, topic string) models.TopicI
 	if err != nil {
 		return topicInfo
 	}
-
-	// Try:
-	// adm.ListConsumerGroupOffsets(group string, topicPartitions map[string][]int32)
 
 	consumers := make(map[string]*models.TopicConsumerInfo)
 
