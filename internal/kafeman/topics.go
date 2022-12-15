@@ -19,31 +19,53 @@ func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) models.Topic {
 }
 
 // TODO: not work
-func (k *kafeman) DescribeTopic(ctx context.Context, topic string) {
-	gl, err := k.GetGroupsList(ctx)
+func (k *kafeman) DescribeTopic(ctx context.Context, topic string) models.TopicInfo {
+	topicInfo := models.NewTopicInfo()
+	topicInfo.TopicName = topic
+
+	gl, err := k.GetGroupsList(ctx) // надо получать только активных мемебров !!!
 	if err != nil {
-		return
+		return topicInfo
 	}
 
-	memrs := make([]models.Member, 0)
-	wg := &sync.WaitGroup{}
+	// Try:
+	// adm.ListConsumerGroupOffsets(group string, topicPartitions map[string][]int32)
 
-	for _, g := range gl {
-		wg.Add(1)
-		go func(gr string) {
-			defer wg.Done()
-			groups := k.DescribeGroup(ctx, gr)
-			for _, m := range groups.Members {
-				for _, a := range m.Assignments {
-					if a.Topic == topic {
-						memrs = append(memrs, m)
+	consumers := make(map[string]*models.TopicConsumerInfo)
+
+	wg := &sync.WaitGroup{}
+	batches := batchesFromSlice(gl, 100)
+	// TODO: refactor
+	for _, batch := range batches {
+		for _, group := range batch {
+			wg.Add(1)
+			go func(group string) {
+				defer wg.Done()
+				groupInfo := k.DescribeGroup(ctx, group)
+				for _, memeber := range groupInfo.Members {
+					for _, assign := range memeber.Assignments {
+						if assign.Topic == topic {
+							_, ok := consumers[group]
+							if !ok {
+								consumers[group] = &models.TopicConsumerInfo{
+									Name: group,
+								}
+							}
+
+							consumers[group].MembersCount++
+						}
 					}
 				}
-			}
-		}(g)
+			}(group)
+		}
+
+		wg.Wait()
 	}
 
-	wg.Wait()
-	// adm := admin.NewAdmin(k.config)
-	// adm.DescribeTopic(ctx, topic)
+	for _, consumer := range consumers {
+		topicInfo.Consumers =
+			append(topicInfo.Consumers, *consumer)
+	}
+
+	return topicInfo
 }

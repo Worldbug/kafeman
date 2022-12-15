@@ -1,8 +1,10 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"kafeman/internal/kafeman"
+	"kafeman/internal/models"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -30,7 +32,8 @@ func init() {
 	RootCMD.AddCommand(TopicCMD)
 	RootCMD.AddCommand(TopicsCMD)
 
-	// TopicCMD.AddCommand(DescribeCMD)
+	TopicCMD.AddCommand(DescribeCMD)
+	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	// TopicCMD.AddCommand(createTopicCmd)
 	// TopicCMD.AddCommand(deleteTopicCmd)
 	TopicCMD.AddCommand(LsTopicsCMD)
@@ -54,27 +57,52 @@ var TopicCMD = &cobra.Command{
 	Short: "Create and describe topics.",
 }
 
+func newTabWriter() *tabwriter.Writer {
+	return tabwriter.NewWriter(
+		outWriter, tabwriterMinWidth, tabwriterWidth,
+		tabwriterPadding, tabwriterPadChar, tabwriterFlags,
+	)
+}
+
 var DescribeCMD = &cobra.Command{
 	Use:   "describe",
 	Short: "Describe topic info",
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
-		k.DescribeTopic(cmd.Context(), args[0])
-		// cli := kafka.Client{
-		// 	Addr: kafka.TCP(conf.GetCurrentCluster().Brokers...),
-		// }
-		// topic := args[0]
-		// resp, err := cli.ListOffsets(cmd.Context(), &kafka.ListOffsetsRequest{
-		// 	Topics: map[string][]kafka.OffsetRequest{
-		// 		topic: {
-		// 			{Partition: 0, Timestamp: time.Now().Unix()},
-		// 		},
-		// 	},
-		// })
+		topicInfo := k.DescribeTopic(cmd.Context(), args[0])
 
-		// fmt.Fprintln(outWriter, resp, err)
+		if asJsonFlag {
+			describeTopicPrintJson(topicInfo)
+			return
+		}
 
+		describeTopicPrint(topicInfo)
 	},
+}
+
+func describeTopicPrintJson(topicInfo models.TopicInfo) {
+	raw, err := json.Marshal(topicInfo)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprintln(outWriter, string(raw))
+}
+
+func describeTopicPrint(topicInfo models.TopicInfo) {
+	w := newTabWriter()
+	defer w.Flush()
+
+	fmt.Fprintf(w, "Topic:\t%s\n", topicInfo.TopicName)
+	w.Flush()
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "Consumers:\n")
+		fmt.Fprintf(w, "\tName\tMembers\n")
+		fmt.Fprintf(w, "\t----\t-------\n")
+	}
+	for _, c := range topicInfo.Consumers {
+		fmt.Fprintf(w, "\t%s\t%d\n", c.Name, c.MembersCount)
+	}
 }
 
 var TopicsCMD = &cobra.Command{
@@ -90,7 +118,7 @@ var LsTopicsCMD = &cobra.Command{
 	Args:    cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
-		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+		w := newTabWriter()
 
 		if !noHeaderFlag {
 			fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
