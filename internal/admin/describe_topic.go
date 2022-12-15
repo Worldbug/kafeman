@@ -2,6 +2,9 @@ package admin
 
 import (
 	"context"
+	"kafeman/internal/models"
+
+	"github.com/Shopify/sarama"
 )
 
 /*
@@ -9,73 +12,69 @@ import (
 консьюмеров лаг и оффсет
 */
 
-func (a *Admin) DescribeTopic(ctx context.Context, topic string) {
+func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicInfo, error) {
+	topicInfo := models.NewTopicInfo()
 
-	// adm := a.getSaramaAdmin()
+	info, err := a.getSaramaAdmin().DescribeConfig(
+		sarama.ConfigResource{
+			Type: sarama.TopicResource,
+			Name: topic,
+		})
 
-	// // groups, _ := adm.ListConsumerGroupOffsets(group string, topicPartitions map[string][]int32)
-	// topicData, _ := adm.DescribeTopics([]string{topic})
+	if err != nil {
+		return topicInfo, err
+	}
 
-	// parts := make(map[string][]int32)
-	// parts[topic] = make([]int32, 0)
+	for _, e := range info {
+		topicInfo.Config = append(topicInfo.Config, models.TopicConfigRecord{
+			Name:      e.Name,
+			Value:     e.Value,
+			ReadOnly:  e.ReadOnly,
+			Sensitive: e.Sensitive,
+		})
 
-	// for _, tm := range topicData {
-	// 	for _, part := range tm.Partitions {
-	// 		parts[topic] = append(parts[topic], part.ID)
-	// 	}
-	// }
+		// TODO: Это точно нужно ?
+		if e.Name == "cleanup.policy" && e.Value == "compact" {
+			topicInfo.Compacted = true
+		}
+	}
 
-	// groupsMap, _ := adm.ListConsumerGroups()
-	// groups := make([]string, 0, len(groupsMap))
-	// for group := range groupsMap {
-	// 	groups = append(groups, group)
-	// }
+	// TODO:
+	// topicInfo.Internal = detail.IsInternal
+	partitions, err := a.describeTopicPartitons(ctx, topic)
+	if err != nil {
+		return topicInfo, err
+	}
 
-	// wg := &sync.WaitGroup{}
-	// for _, groups := range batchesFromSlice(groups, 50) {
-	// 	wg.Add(1)
-	// 	go func(groups []string) {
-	// 		defer wg.Done()
+	topicInfo.Partitions = partitions
 
-	// 		for _, group := range groups {
-	// 			resp, _ := adm.ListConsumerGroupOffsets(group, parts)
-	// 		}
+	return topicInfo, err
+}
 
-	// 	}(groups)
-	// }
-	// wg.Wait()
+func (a *Admin) describeTopicPartitons(ctx context.Context, topic string) ([]models.PartitionInfo, error) {
+	adm := a.getSaramaAdmin()
 
-	// adm.ListConsumerGroupOffsets(group string, topicPartitions map[string][]int32)
+	topicDetails, err := adm.DescribeTopics([]string{topic})
+	if err != nil {
+		return nil, err
+	}
 
-	// cgs, err := adm.ListConsumerGroups()
+	if len(topicDetails) == 0 || topicDetails[0].Err == sarama.ErrUnknownTopicOrPartition {
+		return nil, err
+	}
 
-	// _ = cgs
+	partitonsInfo := make([]models.PartitionInfo, 0, len(topicDetails[0].Partitions))
+	for _, partition := range topicDetails[0].Partitions {
+		offsets := a.fetchLastOffset(ctx, topic, int(partition.ID))
 
-	// md, _ := adm.DescribeTopics([]string{topic})
-	// _ = md
+		partitonsInfo = append(partitonsInfo, models.PartitionInfo{
+			Partition:      partition.ID,
+			HightWatermark: offsets.HightWatermark,
+			Leader:         partition.Leader,
+			Replicas:       len(partition.Replicas),
+			ISR:            partition.Isr,
+		})
+	}
 
-	// pa, err := adm.ListPartitionReassignments(topic, []int32{0})
-	// _ = pa
-
-	///////////
-
-	// cli := a.client()
-	// ///
-	// resp, err := cli.ListGroups(ctx, &kafka.ListGroupsRequest{})
-	// if err != nil {
-	// 	// TODO:
-	// 	// return []string{}, err
-	// }
-
-	// groups := make(map[string]struct{}, len(resp.Groups))
-	// for _, g := range resp.Groups {
-	// 	groups[g.GroupID] = struct{}{}
-	// }
-
-	// groupsList := make([]string, 0, len(resp.Groups))
-	// for _, g := range resp.Groups {
-	// 	groupsList = append(groupsList, g.GroupID)
-	// }
-
-	// return groupsList, err
+	return partitonsInfo, nil
 }

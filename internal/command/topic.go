@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kafeman/internal/kafeman"
 	"kafeman/internal/models"
+	"sort"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
@@ -95,6 +96,22 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 
 	fmt.Fprintf(w, "Topic:\t%s\n", topicInfo.TopicName)
 	w.Flush()
+
+	fmt.Fprintf(w, "Partition:\t%s\n", topicInfo.TopicName)
+	w.Flush()
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "\tPartition\tHigh Watermark\tLeader\tReplicas\tISR\t\n")
+		fmt.Fprintf(w, "\t---------\t--------------\t------\t--------\t---\t\n")
+	}
+	sort.Slice(topicInfo.Partitions, func(i, j int) bool {
+		return topicInfo.Partitions[i].Partition < topicInfo.Partitions[j].Partition
+	})
+	for _, p := range topicInfo.Partitions {
+		fmt.Fprintf(w, "\t%v\t%v\t%v\t%v\t%v\t\n", p.Partition, p.HightWatermark, p.Leader, p.Replicas, p.ISR)
+	}
+	w.Flush()
+
 	if !noHeaderFlag {
 		fmt.Fprintf(w, "Consumers:\n")
 		fmt.Fprintf(w, "\tName\tMembers\n")
@@ -103,6 +120,17 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 	for _, c := range topicInfo.Consumers {
 		fmt.Fprintf(w, "\t%s\t%d\n", c.Name, c.MembersCount)
 	}
+	w.Flush()
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "Config:\n")
+		fmt.Fprintf(w, "\tKey\tValue\n")
+		fmt.Fprintf(w, "\t---\t-----\n")
+	}
+	for _, c := range topicInfo.Config {
+		fmt.Fprintf(w, "\t%s\t%s\n", c.Name, c.Value)
+	}
+
 }
 
 var TopicsCMD = &cobra.Command{

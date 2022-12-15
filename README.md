@@ -44,3 +44,12 @@ kaf inspired cli for kafka management
 ✅| describe
 ✅| ls
 ❌| peek
+
+### topic
+|kafeman|kaf|
+|:---:|:---:|
+✅| describe
+✅| ls
+❌| create
+❌| delete
+❌| update

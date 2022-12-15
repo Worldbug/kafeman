@@ -2,6 +2,7 @@ package kafeman
 
 import (
 	"context"
+	"kafeman/internal/admin"
 	"kafeman/internal/models"
 	"sync"
 )
@@ -19,10 +20,15 @@ func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) models.Topic {
 }
 
 func (k *kafeman) DescribeTopic(ctx context.Context, topic string) models.TopicInfo {
-	topicInfo := models.NewTopicInfo()
+	topicInfo, err := admin.NewAdmin(k.config).DescribeTopic(ctx, topic)
+	// TODO: err
+	if err != nil {
+		return topicInfo
+	}
+
 	topicInfo.TopicName = topic
 
-	gl, err := k.GetGroupsList(ctx) // надо получать только активных мемебров !!!
+	groupsList, err := k.GetGroupsList(ctx)
 	if err != nil {
 		return topicInfo
 	}
@@ -30,7 +36,7 @@ func (k *kafeman) DescribeTopic(ctx context.Context, topic string) models.TopicI
 	consumers := make(map[string]*models.TopicConsumerInfo)
 
 	wg := &sync.WaitGroup{}
-	batches := batchesFromSlice(gl, 100)
+	batches := batchesFromSlice(groupsList, 100)
 	// TODO: refactor
 	for _, batch := range batches {
 		for _, group := range batch {
