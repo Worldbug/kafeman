@@ -2,11 +2,12 @@ package handler
 
 import (
 	"io"
-	"kafeman/internal/config"
-	"kafeman/internal/models"
-	"kafeman/internal/proto"
 	"os"
 	"sync"
+
+	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/proto"
 )
 
 func NewMessageHandler(wg *sync.WaitGroup, config config.Config, cmd models.ConsumeCommand) *MessageHandler {

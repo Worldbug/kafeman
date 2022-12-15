@@ -2,9 +2,10 @@ package command
 
 import (
 	"fmt"
-	"kafeman/internal/config"
 	"os"
 	"strings"
+
+	"github.com/worldbug/kafeman/internal/config"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"

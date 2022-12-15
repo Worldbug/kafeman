@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/models"
 	"strings"
 	"time"
 )

@@ -2,10 +2,11 @@ package consumer
 
 import (
 	"context"
-	"kafeman/internal/admin"
-	"kafeman/internal/config"
-	"kafeman/internal/handler"
-	"kafeman/internal/models"
+
+	"github.com/worldbug/kafeman/internal/admin"
+	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/handler"
+	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/Shopify/sarama"
 )

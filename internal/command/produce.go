@@ -2,8 +2,9 @@ package command
 
 import (
 	"fmt"
-	"kafeman/internal/kafeman"
-	"kafeman/internal/proto"
+
+	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/proto"
 
 	"github.com/spf13/cobra"
 )

@@ -3,11 +3,12 @@ package kafeman
 import (
 	"context"
 	"io"
-	"kafeman/internal/config"
-	"kafeman/internal/models"
-	"kafeman/internal/proto"
 	"os"
 	"sort"
+
+	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/proto"
 
 	"github.com/segmentio/kafka-go"
 )

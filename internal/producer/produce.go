@@ -2,7 +2,8 @@ package producer
 
 import (
 	"fmt"
-	"kafeman/internal/config"
+
+	"github.com/worldbug/kafeman/internal/config"
 
 	"github.com/Shopify/sarama"
 )

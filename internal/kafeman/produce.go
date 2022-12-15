@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"context"
 	"io"
-	"kafeman/internal/producer"
-	"kafeman/internal/proto"
 	"os"
+
+	"github.com/worldbug/kafeman/internal/producer"
+	"github.com/worldbug/kafeman/internal/proto"
 )
 
 type ProduceCMD struct {

@@ -2,9 +2,10 @@ package kafeman
 
 import (
 	"context"
-	"kafeman/internal/admin"
-	"kafeman/internal/models"
 	"sync"
+
+	"github.com/worldbug/kafeman/internal/admin"
+	"github.com/worldbug/kafeman/internal/models"
 )
 
 func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) models.Topic {

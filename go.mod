@@ -1,4 +1,4 @@
-module kafeman
+module github.com/worldbug/kafeman
 
 go 1.19
 

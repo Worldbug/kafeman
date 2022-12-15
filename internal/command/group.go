@@ -3,10 +3,11 @@ package command
 import (
 	"encoding/json"
 	"fmt"
-	"kafeman/internal/kafeman"
-	"kafeman/internal/models"
 	"sort"
 	"text/tabwriter"
+
+	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/spf13/cobra"
 )

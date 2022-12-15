@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"kafeman/internal/app"
 	"os"
+
+	"github.com/worldbug/kafeman/internal/app"
 )
 
 func main() {

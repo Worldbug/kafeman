@@ -3,10 +3,11 @@ package kafeman
 import (
 	"context"
 	"fmt"
-	"kafeman/internal/consumer"
-	"kafeman/internal/handler"
-	"kafeman/internal/models"
 	"sync"
+
+	"github.com/worldbug/kafeman/internal/consumer"
+	"github.com/worldbug/kafeman/internal/handler"
+	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/segmentio/kafka-go"
 )

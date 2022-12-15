@@ -2,9 +2,10 @@ package admin
 
 import (
 	"context"
-	"kafeman/internal/config"
 	"sync"
 	"time"
+
+	"github.com/worldbug/kafeman/internal/config"
 
 	"github.com/Shopify/sarama"
 	"github.com/segmentio/kafka-go"

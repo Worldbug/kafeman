@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"kafeman/internal/config"
-	"kafeman/internal/proto"
+	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/proto"
 
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"

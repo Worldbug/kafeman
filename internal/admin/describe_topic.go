@@ -2,7 +2,8 @@ package admin
 
 import (
 	"context"
-	"kafeman/internal/models"
+
+	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/Shopify/sarama"
 )

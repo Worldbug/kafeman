@@ -1,11 +1,12 @@
 package command
 
 import (
-	"kafeman/internal/kafeman"
-	"kafeman/internal/models"
-	"kafeman/internal/proto"
 	"strconv"
 	"time"
+
+	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/proto"
 
 	"github.com/spf13/cobra"
 )

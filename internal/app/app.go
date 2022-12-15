@@ -1,7 +1,7 @@
 package app
 
 import (
-	"kafeman/internal/command"
+	"github.com/worldbug/kafeman/internal/command"
 
 	"github.com/spf13/cobra"
 )
