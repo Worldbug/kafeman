@@ -9,7 +9,7 @@ kaf inspired cli for kafka management
 ## Install
 
 ```sh
-$ go install github.com/wordlbug/kafeman@v0.0.2
+go install github.com/wordlbug/kafeman/cmd/kafeman@latest
 ```
 
 ### completions
@@ -17,32 +17,32 @@ Aftrer install you can add completions for shell
 
 Bash:
 ```sh
-$ source <(kafeman completion bash)
+source <(kafeman completion bash)
 # To load completions for each session, execute once:
 
 Linux:
-$ kafeman completion bash > /etc/bash_completion.d/kafeman
+kafeman completion bash > /etc/bash_completion.d/kafeman
 
 MacOS:
-$ kafeman completion bash > /usr/local/etc/bash_completion.d/kafeman
+kafeman completion bash > /usr/local/etc/bash_completion.d/kafeman
 ```
 Zsh:
 ```sh
 # To load completions for each session, execute once:
-$ kafeman completion zsh > "${fpath[1]}/_kafeman"
+kafeman completion zsh > "${fpath[1]}/_kafeman"
 # You will need to start a new shell for this setup to take effect.
 ```
 Fish:
 ```sh
-$ kafeman completion fish | source
+kafeman completion fish | source
 # To load completions for each session, execute once:
-$ kafeman completion fish > ~/.config/fish/completions/kafeman.fish
+kafeman completion fish > ~/.config/fish/completions/kafeman.fish
 ```
 ### Config
 
 Before starting, initialize the config
 ```sh
-$ kafeman config init
+kafeman config init
 ```
 In the config you can configure which proto type is consumed in which topic
 ```yaml
