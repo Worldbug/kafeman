@@ -12,6 +12,12 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+/*
+	1. Опционально падать при ошибке
+	2. Не выводить ошибок если такие были
+	3. Просто выводить ошибки но не падать
+*/
+
 func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) {
 	wg := &sync.WaitGroup{}
 

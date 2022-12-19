@@ -1,5 +1,6 @@
 package models
 
+// TODO: migrate as part TopicInfo
 type Topic struct {
 	Name       string
 	Partitions int

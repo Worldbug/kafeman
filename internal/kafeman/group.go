@@ -6,6 +6,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -17,29 +18,13 @@ func (k *kafeman) client() kafka.Client {
 }
 
 func (k *kafeman) GetGroupsList(ctx context.Context) ([]string, error) {
-	cli := k.client()
-	resp, err := cli.ListGroups(ctx, &kafka.ListGroupsRequest{})
-	if err != nil {
-		return []string{}, err
-	}
-
-	groups := make(map[string]struct{}, len(resp.Groups))
-	for _, g := range resp.Groups {
-		groups[g.GroupID] = struct{}{}
-	}
-
-	groupsList := make([]string, 0, len(resp.Groups))
-	for _, g := range resp.Groups {
-		groupsList = append(groupsList, g.GroupID)
-	}
-
-	return groupsList, err
+	return admin.NewAdmin(k.config).GetGroupsList(ctx)
 }
 
 func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]GroupInfo, error) {
 	cli := k.client()
 
-	batches := batchesFromSlice(groupList, 20)
+	batches := utils.BatchesFromSlice(groupList, 20)
 	describe := make([]GroupInfo, 0, len(groupList))
 
 	wg := &sync.WaitGroup{}

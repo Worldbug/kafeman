@@ -3,6 +3,7 @@ package kafeman
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -60,16 +61,7 @@ func readLines(reader io.Reader, bufferSize int, out chan []byte) {
 	close(out)
 
 	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Can`t scan: %+v", err)
 		os.Exit(1)
-		// errorExit("scanning input failed: %v\n", err)
 	}
 }
-
-// func (k *kafeman) protoMarshall(data chan []byte, protoType string, messages chan []producer.Message) {
-// 	for raw := range data {
-// 		msg, err := k.protoDecoder.EncodeProto(raw, protoType)
-// 		if err != nil {
-// 			// TODO: std error
-// 		}
-// 	}
-// }

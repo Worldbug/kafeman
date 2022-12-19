@@ -69,10 +69,9 @@ var GroupDeleteCMD = &cobra.Command{
 		err := k.DeleteGroup(group)
 		if err != nil {
 			errorExit("Could not delete consumer group %v: %v\n", group, err.Error())
-		} else {
-			fmt.Printf("Deleted consumer group %v.\n", group)
 		}
 
+		fmt.Printf("Deleted consumer group %v.\n", group)
 	},
 }
 
@@ -81,6 +80,7 @@ var GroupLsCMD = &cobra.Command{
 	Short: "List groups",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		// TODO: надо тут поправить
 		k := kafeman.Newkafeman(conf)
 		groupList, err := k.GetGroupsList(cmd.Context())
 		if err != nil {
@@ -140,11 +140,15 @@ var GroupCommitCMD = &cobra.Command{
 		partitions := make([]int, 0)
 
 		if fromJsonFlag {
-
+			// TODO: commit from json
 		}
 
 		if allPartitionsFlag {
-			t := k.GetTopicInfo(cmd.Context(), topicFlag)
+			t, err := k.GetTopicInfo(cmd.Context(), topicFlag)
+			if err != nil {
+				errorExit("%+v", err)
+			}
+
 			o := getOffsetFromFlag()
 
 			for i := t.Partitions - 1; i >= 0; i-- {
