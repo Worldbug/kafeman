@@ -77,11 +77,16 @@ var ConfigSelectCluster = &cobra.Command{
 
 		_, selected, err := p.Run()
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "Can`t select config: %+v", err)
 			os.Exit(0)
 		}
 
 		conf.SetCurrentCluster(selected)
-		config.SaveConfig(conf, configPath)
+		err = config.SaveConfig(conf, configPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Can`t save config: %+v", err)
+			os.Exit(0)
+		}
 	},
 }
 
@@ -89,6 +94,11 @@ var ConfigInitCMD = &cobra.Command{
 	Use:   "init",
 	Short: "Create empty config and export to file (default ~/.kafeman/config.yml)",
 	Run: func(cmd *cobra.Command, args []string) {
-		config.ExportConfig(configPath)
+		err := config.ExportConfig(configPath)
+		if err != nil {
+			errorExit("Can`t save config: %+v", err)
+		}
+
+		fmt.Fprintf(os.Stdout, "Config created in ~/.config/kafeman/config.yml\n")
 	},
 }

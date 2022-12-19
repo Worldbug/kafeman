@@ -6,11 +6,10 @@ import (
 	"os"
 	"sort"
 
+	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/proto"
-
-	"github.com/segmentio/kafka-go"
 )
 
 func Newkafeman(
@@ -34,50 +33,17 @@ type kafeman struct {
 	protoDecoder proto.ProtobufDecoder
 }
 
-func (k *kafeman) ListTopics(ctx context.Context) []models.Topic {
-	if len(k.config.GetCurrentCluster().Brokers[0]) < 1 {
-		return []models.Topic{}
-	}
+func (k *kafeman) ListTopics(ctx context.Context) ([]models.Topic, error) {
+	adm := admin.NewAdmin(k.config)
 
-	conn, err := kafka.Dial("tcp", k.config.GetCurrentCluster().Brokers[0])
+	topics, err := adm.ListTopics(ctx)
 	if err != nil {
-		panic(err.Error())
-	}
-	defer conn.Close()
-
-	partitions, err := conn.ReadPartitions()
-	if err != nil {
-		panic(err.Error())
+		return []models.Topic{}, err
 	}
 
-	topics := map[string]models.Topic{}
-
-	for _, p := range partitions {
-		if info, ok := topics[p.Topic]; ok {
-			info.Partitions++
-			info.Replicas += len(p.Replicas)
-			topics[p.Topic] = info
-			continue
-		}
-
-		topics[p.Topic] = models.Topic{
-			Name:       p.Topic,
-			Partitions: 1,
-			Replicas:   len(p.Replicas),
-		}
-	}
-
-	sortedTopics := make([]models.Topic, len(topics))
-
-	i := 0
-	for _, topic := range topics {
-		sortedTopics[i] = topic
-		i++
-	}
-
-	sort.Slice(sortedTopics, func(i int, j int) bool {
-		return sortedTopics[i].Name < sortedTopics[j].Name
+	sort.Slice(topics, func(i int, j int) bool {
+		return topics[i].Name < topics[j].Name
 	})
 
-	return sortedTopics
+	return topics, nil
 }

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultConfigDir  = ".kafeman"
+	defaultConfigDir  = `/.config/kafeman`
 	defaultConfigName = "config.yml"
 )
 
@@ -73,31 +73,36 @@ func LoadConfig(configPath string) (Config, error) {
 	return cfg, err
 }
 
-func ExportConfig(path string) {
+func ExportConfig(path string) error {
 	c := GenerateConfig()
-	SaveConfig(c, path)
+	return SaveConfig(c, path)
 }
 
-func SaveConfig(config Config, path string) {
+func SaveConfig(config Config, path string) error {
 	if path == "" {
 		home, err := homedir.Dir()
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		configDir := filepath.Join(home, defaultConfigDir)
-		_ = os.MkdirAll(configDir, 0755)
+		err = os.MkdirAll(configDir, 0755)
+		if err != nil {
+			return err
+		}
+
 		path = filepath.Join(configDir, defaultConfigName)
 
 	}
 
 	file, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	encoder := yaml.NewEncoder(file)
 	encoder.Encode(&config)
+	return nil
 }
 
 func valueOrDefault(val, def string) string {

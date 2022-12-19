@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -46,10 +47,21 @@ func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic stri
 
 func (a *Admin) client() kafka.Client {
 	return kafka.Client{
-		Addr: kafka.TCP(a.config.GetCurrentCluster().Brokers...),
+		Addr:    kafka.TCP(a.config.GetCurrentCluster().Brokers...),
+		Timeout: time.Second * 15,
 	}
 }
 
+var ErrNoBrokers = errors.New("Empty brokers list")
+
+func (a *Admin) conn() (*kafka.Conn, error) {
+	if len(a.config.GetCurrentCluster().Brokers) < 1 ||
+		len(a.config.GetCurrentCluster().Brokers[0]) < 1 {
+		return nil, ErrNoBrokers
+	}
+
+	return kafka.Dial("tcp", a.config.GetCurrentCluster().Brokers[0])
+}
 func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
 	var admin sarama.ClusterAdmin
 	clusterAdmin, err := sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, a.getSaramaConfig())
@@ -69,21 +81,3 @@ func (a *Admin) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *
 		mu.Unlock()
 	}
 }
-
-// TODO: work to slow
-// func (a *Admin) ListTopics(ctx context.Context) []string {
-// 	addrs := a.config.GetCurrentCluster().Brokers
-// 	admin, err := sarama.NewClusterAdmin(addrs, a.getSaramaConfig())
-// 	if err != nil {
-// 		return []string{}
-// 	}
-//
-// 	topicsMap, err := admin.ListTopics()
-// 	if err != nil {
-// 		return []string{}
-// 	}
-//
-// 	fmt.Println(topicsMap)
-//
-// 	return []string{}
-// }

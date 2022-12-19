@@ -1,6 +1,6 @@
-package admin
+package utils
 
-func batchesFromSlice[S any](slice []S, maxBatchSize int) [][]S {
+func BatchesFromSlice[S any](slice []S, maxBatchSize int) [][]S {
 	batches := make([][]S, 0)
 
 	for i := 0; i < len(slice); i += maxBatchSize {

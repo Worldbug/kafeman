@@ -1,9 +1,72 @@
 # kafeman
-
 kaf inspired cli for kafka management
+* Optimizations for fast performance in large kafka clusters
+* Simplified work with proto in topics
+* Alternative output in json format
+* Work not only with offsets but also with timestamps
+* More informative describe
 
-переливание данных из одного кластера в другой
+## Install
 
+```sh
+$ go install github.com/wordlbug/kafeman@v0.0.2
+```
+
+### completions
+Aftrer install you can add completions for shell
+
+Bash:
+```sh
+$ source <(kafeman completion bash)
+# To load completions for each session, execute once:
+
+Linux:
+$ kafeman completion bash > /etc/bash_completion.d/kafeman
+
+MacOS:
+$ kafeman completion bash > /usr/local/etc/bash_completion.d/kafeman
+```
+Zsh:
+```sh
+# To load completions for each session, execute once:
+$ kafeman completion zsh > "${fpath[1]}/_kafeman"
+# You will need to start a new shell for this setup to take effect.
+```
+Fish:
+```sh
+$ kafeman completion fish | source
+# To load completions for each session, execute once:
+$ kafeman completion fish > ~/.config/fish/completions/kafeman.fish
+```
+### Config
+
+Before starting, initialize the config
+```sh
+$ kafeman config init
+```
+In the config you can configure which proto type is consumed in which topic
+```yaml
+current_cluster: prod
+clusters:
+- name: prod
+  brokers:
+  - kafkabroker.prod:9092
+- name: stg
+  brokers:
+  - kafkabroker.stg:9092
+- name: local
+  brokers:
+  - localhost:9092
+topics:
+  my-topic-1:
+    proto_type: myTopic.Event
+    proto_paths:
+    - project/protos
+ ```
+###
+
+
+## Status
 ### Legend
 ✅ Fully implemented \
 ❌ Not implemented \

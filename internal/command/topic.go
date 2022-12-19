@@ -67,11 +67,15 @@ func newTabWriter() *tabwriter.Writer {
 }
 
 var DescribeCMD = &cobra.Command{
-	Use:   "describe",
-	Short: "Describe topic info",
+	Use:               "describe",
+	Short:             "Describe topic info",
+	ValidArgsFunction: validTopicArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
-		topicInfo := k.DescribeTopic(cmd.Context(), args[0])
+		topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
+		if err != nil {
+			errorExit("%+v", err)
+		}
 
 		if asJsonFlag {
 			describeTopicPrintJson(topicInfo)
@@ -125,11 +129,12 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 
 	if !noHeaderFlag {
 		fmt.Fprintf(w, "Config:\n")
-		fmt.Fprintf(w, "\tKey\tValue\n")
-		fmt.Fprintf(w, "\t---\t-----\n")
+		fmt.Fprintf(w, "\tKey\tValue\tRead only\tSensitive\n")
+		fmt.Fprintf(w, "\t---\t-----\t---------\t---------\n")
 	}
+
 	for _, c := range topicInfo.Config {
-		fmt.Fprintf(w, "\t%s\t%s\n", c.Name, c.Value)
+		fmt.Fprintf(w, "\t%s\t%s\t%v\t%v\n", c.Name, c.Value, c.ReadOnly, c.Sensitive)
 	}
 
 }
@@ -153,7 +158,12 @@ var LsTopicsCMD = &cobra.Command{
 			fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
 		}
 
-		for _, topic := range k.ListTopics(cmd.Context()) {
+		topics, err := k.ListTopics(cmd.Context())
+		if err != nil {
+			errorExit("%+v", err)
+		}
+
+		for _, topic := range topics {
 			fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
 		}
 		w.Flush()

@@ -81,12 +81,16 @@ func parseTime(str string) time.Time {
 
 func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	k := kafeman.Newkafeman(conf)
-	topics := k.ListTopics(cmd.Context())
+	topics, err := k.ListTopics(cmd.Context())
+	if err != nil {
+		errorExit("%+v", err)
+	}
 
 	topicList := make([]string, 0, len(topics))
 	for _, topic := range topics {
 		topicList = append(topicList, topic.Name)
 	}
+
 	return topicList, cobra.ShellCompDirectiveNoFileComp
 }
 

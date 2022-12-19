@@ -2,19 +2,17 @@ package admin
 
 import (
 	"context"
+	"sync"
 
 	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/Shopify/sarama"
 )
 
-/*
-Это должно возвращать
-консьюмеров лаг и оффсет
-*/
-
 func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicInfo, error) {
 	topicInfo := models.NewTopicInfo()
+	topicInfo.TopicName = topic
 
 	info, err := a.getSaramaAdmin().DescribeConfig(
 		sarama.ConfigResource{
@@ -40,8 +38,7 @@ func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicIn
 		}
 	}
 
-	// TODO:
-	// topicInfo.Internal = detail.IsInternal
+	// TODO: topicInfo.Internal = detail.IsInternal
 	partitions, err := a.describeTopicPartitons(ctx, topic)
 	if err != nil {
 		return topicInfo, err
@@ -78,4 +75,53 @@ func (a *Admin) describeTopicPartitons(ctx context.Context, topic string) ([]mod
 	}
 
 	return partitonsInfo, nil
+}
+func (a *Admin) GetTopicConsumers(ctx context.Context, topic string) ([]models.TopicConsumerInfo, error) {
+	consumersList := make([]models.TopicConsumerInfo, 0)
+	groupsList, err := a.GetGroupsList(ctx)
+	if err != nil {
+		return consumersList, err
+	}
+
+	consumers := make(map[string]*models.TopicConsumerInfo)
+
+	wg := &sync.WaitGroup{}
+	batches := utils.BatchesFromSlice(groupsList, 100)
+
+	for _, batch := range batches {
+		for _, group := range batch {
+			wg.Add(1)
+			go func(group string) {
+				defer wg.Done()
+				a.describeTopicConsumers(ctx, topic, group, consumers)
+			}(group)
+		}
+
+		wg.Wait()
+	}
+
+	for _, consumer := range consumers {
+		consumersList =
+			append(consumersList, *consumer)
+	}
+
+	return consumersList, nil
+}
+
+func (a *Admin) describeTopicConsumers(ctx context.Context, topic string, group string, consumers map[string]*models.TopicConsumerInfo) {
+	groupInfo := a.DescribeGroup(ctx, group)
+	for _, memeber := range groupInfo.Members {
+		for _, assign := range memeber.Assignments {
+			if assign.Topic == topic {
+				_, ok := consumers[group]
+				if !ok {
+					consumers[group] = &models.TopicConsumerInfo{
+						Name: group,
+					}
+				}
+
+				consumers[group].MembersCount++
+			}
+		}
+	}
 }
