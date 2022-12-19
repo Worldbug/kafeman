@@ -11,24 +11,28 @@ kaf inspired cli for kafka management
 ```sh
 go install github.com/wordlbug/kafeman/cmd/kafeman@latest
 ```
+make sure go/bin is in PATH
+
+```sh
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+```
 
 ### completions
 Aftrer install you can add completions for shell
 
 Bash:
 ```sh
+# For current session
 source <(kafeman completion bash)
-# To load completions for each session, execute once:
 
-Linux:
+# Linux:
 kafeman completion bash > /etc/bash_completion.d/kafeman
 
-MacOS:
+# MacOS:
 kafeman completion bash > /usr/local/etc/bash_completion.d/kafeman
 ```
 Zsh:
 ```sh
-# To load completions for each session, execute once:
 kafeman completion zsh > "${fpath[1]}/_kafeman"
 # You will need to start a new shell for this setup to take effect.
 ```
