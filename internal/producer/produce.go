@@ -2,6 +2,8 @@ package producer
 
 import (
 	"fmt"
+	"os"
+	"sync"
 
 	"github.com/worldbug/kafeman/internal/config"
 
@@ -30,7 +32,10 @@ type Producer struct {
 
 // TODO: new sarama from conf
 
-func (p *Producer) Produce(topic string) {
+func (p *Producer) Produce(topic string, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
 	addrs := p.config.GetCurrentCluster().Brokers
 
 	producer, err := sarama.NewSyncProducer(addrs, p.getSaramaConfig())
@@ -48,7 +53,11 @@ func (p *Producer) Produce(topic string) {
 			Value: sarama.ByteEncoder(msg.Value),
 		})
 
-		fmt.Println(err)
+		// TODO: опционально показывать куда ушло сообщение
+		if err != nil {
+			// TODO: опционально НЕ показывать ошибку
+			fmt.Fprintf(os.Stderr, "error sending message: %+v", err)
+		}
 	}
 }
 
