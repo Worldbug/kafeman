@@ -51,6 +51,7 @@ func (k *kafeman) marshall(cmd ProduceCMD, input chan producer.Message) {
 			}
 			continue
 		}
+
 		input <- producer.Message{
 			Key:   []byte{},
 			Value: raw,
@@ -63,13 +64,14 @@ func readLines(reader io.Reader, bufferSize int, out chan []byte) {
 	if bufferSize > 0 {
 		scanner.Buffer(make([]byte, bufferSize), bufferSize)
 	}
-
+	// TODO: закрывать скан в случае если ввод из пайпа
 	for scanner.Scan() {
 		out <- scanner.Bytes()
 	}
 	close(out)
 
 	if err := scanner.Err(); err != nil {
+		// TODO: опционально ничего не писать
 		fmt.Fprintf(os.Stderr, "Can`t scan: %+v", err)
 		os.Exit(1)
 	}

@@ -2,6 +2,7 @@ package command
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/proto"
@@ -38,7 +39,8 @@ var ProduceExample = &cobra.Command{
 		topic := conf.Topics[args[0]]
 		decoder := proto.NewProtobufDecoder(topic.ProtoPaths)
 		example := decoder.GetExample(topic.ProtoType)
-		fmt.Println(example)
+		// TODO: сделать заполнение семпла базовыми данными
+		fmt.Fprintf(os.Stdout, "%+v", example)
 	},
 }
 
