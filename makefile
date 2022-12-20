@@ -1,2 +1,2 @@
 build:
-	go build -ldflags "-w -s" -o builds/kafeman .
+	go build -ldflags "-w -s" -o builds/kafeman cmd/kafeman/main.go
