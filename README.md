@@ -89,8 +89,9 @@ topics:
 | :---: | :---: |
 ✅|json
 ✅|protobuf
-❌|message-pack
-❌|avro
+✅|message-pack
+✅|avro
+✅|base64
 
 ### consume
 

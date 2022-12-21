@@ -3,10 +3,10 @@ package kafeman
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/worldbug/kafeman/internal/consumer"
 	"github.com/worldbug/kafeman/internal/models"
-	"github.com/worldbug/kafeman/internal/serializers"
 )
 
 /*
@@ -15,15 +15,33 @@ import (
 	3. Просто выводить ошибки но не падать
 */
 
-func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) (<-chan models.Message, error) {
+type ConsumeCommand struct {
+	Topic          string
+	ConsumerGroup  string
+	Partitions     []int32
+	CommitMessages bool
+	Offset         int64
+	Follow         bool
+	WithMeta       bool
+	MessagesCount  int32
+	FromTime       time.Time
+	Decoder        Decoder
+}
+
+func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand, decoder Decoder) (<-chan models.Message, error) {
 	wg := &sync.WaitGroup{}
 
-	decoder, err := k.getDecoder(cmd.Topic)
-	if err != nil {
-		return nil, ErrNoTopicProvided
-	}
-
-	c := consumer.NewSaramaConsuemr(k.config, cmd)
+	c := consumer.NewSaramaConsuemr(
+		k.config,
+		cmd.ConsumerGroup,
+		cmd.Topic,
+		cmd.Partitions,
+		cmd.Offset,
+		cmd.MessagesCount,
+		cmd.CommitMessages,
+		cmd.Follow,
+		cmd.FromTime,
+	)
 
 	messages, err := c.StartConsume(ctx)
 	if err != nil {
@@ -35,19 +53,6 @@ func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) (<-cha
 	wg.Wait()
 
 	return output, nil
-}
-
-func (k *kafeman) getDecoder(topic string) (Decoder, error) {
-	topicConfig, ok := k.config.Topics[topic]
-	if !ok {
-		return serializers.NewRawSerializer(), nil
-	}
-
-	if topicConfig.ProtoType == "" || len(topicConfig.ProtoPaths) == 0 {
-		return serializers.NewRawSerializer(), nil
-	}
-
-	return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
 }
 
 func (k *kafeman) decodeMessages(

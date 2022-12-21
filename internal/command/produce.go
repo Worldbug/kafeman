@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
 
@@ -23,6 +24,7 @@ func init() {
 	RootCMD.AddCommand(ProduceExample)
 
 	ProduceCMD.Flags().StringVarP(&keyFlag, "key", "k", "", "Key for the record. Currently only strings are supported.")
+	ProduceCMD.Flags().StringVar(&encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
 	ProduceCMD.Flags().StringVar(&partitionerFlag, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")
 	ProduceCMD.Flags().StringVar(&timestampFlag, "timestamp", "", "Select timestamp for record")
 	ProduceCMD.Flags().Int32VarP(&partitionFlag, "partition", "p", -1, "Partition to produce to")
@@ -57,13 +59,57 @@ var ProduceCMD = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 
-		command := kafeman.ProduceCMD{
+		command := kafeman.ProduceCommand{
 			Topic:      args[0],
 			BufferSize: bufferSizeFlag,
 			Input:      os.Stdin,
 			Output:     os.Stdout,
 		}
 
-		k.Produce(cmd.Context(), command)
+		encoder, err := getEncoder(command)
+		if err != nil {
+			errorExit("%+v", err)
+		}
+
+		k.Produce(cmd.Context(), command, encoder)
 	},
+}
+
+func getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
+	topicConfig, ok := conf.Topics[cmd.Topic]
+	if !ok && encoding == "" {
+		return serializers.NewRawSerializer(), nil
+	}
+
+	// override encoding
+	if encoding != "" {
+		topicConfig.Encoding = config.Encoding(encoding)
+	}
+
+	// force type
+	switch topicConfig.Encoding {
+	case config.RAW:
+		return serializers.NewRawSerializer(), nil
+	case config.Avro:
+		return serializers.NewAvroSerializer(topicConfig.AvroSchemaURL, topicConfig.AvroSchemaID)
+	case config.Protobuf:
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+	case config.MSGPack:
+		return serializers.NewMessagePackSerializer(), nil
+	case config.Base64:
+		return serializers.NewBase64Serializer(), nil
+	}
+
+	// AVRO DECODER
+	if topicConfig.AvroSchemaURL != "" {
+		return serializers.NewAvroSerializer(topicConfig.AvroSchemaURL, topicConfig.AvroSchemaID)
+	}
+
+	// PROTO DECODER
+	if topicConfig.ProtoType != "" || len(topicConfig.ProtoPaths) != 0 {
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+	}
+
+	// RAW DECODER
+	return serializers.NewRawSerializer(), nil
 }

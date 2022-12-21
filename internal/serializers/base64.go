@@ -1,6 +1,8 @@
 package serializers
 
-import "encoding/base64"
+import (
+	"encoding/base64"
+)
 
 func NewBase64Serializer() *Base64Serializer {
 	return &Base64Serializer{}
@@ -14,8 +16,5 @@ func (bs *Base64Serializer) Encode(input []byte) ([]byte, error) {
 }
 
 func (bs *Base64Serializer) Decode(input []byte) ([]byte, error) {
-	raw := make([]byte, 0)
-	_, err := base64.StdEncoding.Decode(raw, input)
-
-	return raw, err
+	return base64.StdEncoding.DecodeString(string(input))
 }
