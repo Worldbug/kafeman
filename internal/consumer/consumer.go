@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"sync"
 
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/config"
@@ -87,13 +88,21 @@ func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) 
 		}
 	}
 
-	adm := admin.NewAdmin(c.config)
-
 	c.messages = make(chan models.Message, len(partitions))
+	go c.asyncConsumersWorkGroup(ctx, consumer, topic, partitions)
 
+	return c.messages, nil
+
+}
+
+func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.Consumer, topic string, partitions []int32) {
+	adm := admin.NewAdmin(c.config)
+	wg := &sync.WaitGroup{}
 	for _, p := range partitions {
 		// TODO: set offset per partition mode
-		go func(partition int32) {
+		wg.Add(1)
+		go func(partition int32, wg *sync.WaitGroup) {
+			defer wg.Done()
 			offset := c.command.Offset
 
 			if c.command.FromTime.UnixNano() != 0 {
@@ -106,12 +115,11 @@ func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) 
 			}
 
 			c.asyncConsume(cp)
-		}(p)
-
+		}(p, wg)
 	}
 
-	return c.messages, nil
-
+	wg.Wait()
+	close(c.messages)
 }
 
 func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {

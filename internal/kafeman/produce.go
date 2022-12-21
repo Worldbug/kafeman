@@ -32,7 +32,7 @@ func (k *kafeman) Produce(ctx context.Context, cmd ProduceCMD) error {
 		return ErrNoTopicProvided
 	}
 
-	encoder, err := k.GetEncoder(topic)
+	encoder, err := k.getEncoder(topic)
 	if err != nil {
 		return err
 	}
@@ -40,13 +40,13 @@ func (k *kafeman) Produce(ctx context.Context, cmd ProduceCMD) error {
 	producer := producer.NewProducer(k.config, input)
 	go producer.Produce(cmd.Topic, wg)
 
-	k.marshall(cmd, encoder, input)
+	k.encodeMessages(cmd, encoder, input)
 	close(input)
 
 	return nil
 }
 
-func (k *kafeman) GetEncoder(topic config.Topic) (Encoder, error) {
+func (k *kafeman) getEncoder(topic config.Topic) (Encoder, error) {
 	if topic.ProtoType == "" || len(topic.ProtoPaths) == 0 {
 		return serializers.NewRawSerializer(), nil
 	}
@@ -54,7 +54,7 @@ func (k *kafeman) GetEncoder(topic config.Topic) (Encoder, error) {
 	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 }
 
-func (k *kafeman) marshall(cmd ProduceCMD, encoder Encoder, input chan producer.Message) {
+func (k *kafeman) encodeMessages(cmd ProduceCMD, encoder Encoder, input chan producer.Message) {
 	rawInput := readLinesToChan(cmd.Input, cmd.BufferSize)
 	for raw := range rawInput {
 

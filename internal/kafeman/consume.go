@@ -31,13 +31,13 @@ func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) (<-cha
 
 	c := consumer.NewSaramaConsuemr(k.config, cmd)
 
-	mesasges, err := c.StartConsume(ctx)
+	messages, err := c.StartConsume(ctx)
 	if err != nil {
 		return nil, ErrNoTopicProvided
 	}
 
 	output := make(chan models.Message)
-	go k.handleMessage(mesasges, output, wg, decoder)
+	go k.decodeMessages(messages, output, wg, decoder)
 	wg.Wait()
 
 	return output, nil
@@ -51,11 +51,12 @@ func (k *kafeman) getDecoder(topic config.Topic) (Decoder, error) {
 	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 }
 
-func (k *kafeman) handleMessage(
+func (k *kafeman) decodeMessages(
 	input <-chan models.Message, output chan<- models.Message,
 	wg *sync.WaitGroup, decoder Decoder) {
 	wg.Add(1)
 	defer wg.Done()
+	defer close(output)
 
 	for {
 		select {
