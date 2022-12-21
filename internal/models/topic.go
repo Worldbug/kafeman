@@ -1,18 +1,19 @@
 package models
 
 func NewTopicInfo() TopicInfo {
-	return TopicInfo{
-		Consumers: []TopicConsumerInfo{},
-	}
+	return TopicInfo{}
 }
 
 type TopicInfo struct {
 	TopicName  string              `json:"topic_name,omitempty"`
 	Internal   bool                `json:"internal,omitempty"`
 	Compacted  bool                `json:"compacted,omitempty"`
-	Consumers  []TopicConsumerInfo `json:"consumers,omitempty"`
 	Partitions []PartitionInfo     `json:"partitions,omitempty"`
 	Config     []TopicConfigRecord `json:"config,omitempty"`
+}
+
+type TopicConsumers struct {
+	Consumers []TopicConsumerInfo `json:"consumers,omitempty"`
 }
 
 type TopicConsumerInfo struct {

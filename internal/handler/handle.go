@@ -3,21 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/worldbug/kafeman/internal/models"
 	"strings"
 	"time"
+
+	"github.com/worldbug/kafeman/internal/models"
 )
-
-func (mg *MessageHandler) handleProtoMessages(message models.Message, protoType string) models.Message {
-	data, err := mg.protoDecoder.DecodeProto(message.Value, protoType)
-	if err != nil {
-		fmt.Fprintln(mg.errWriter, err)
-		return message
-	}
-
-	message.Value = data
-	return message
-}
 
 func (mg *MessageHandler) printMessage(message models.Message, printMeta bool) {
 	if !printMeta {

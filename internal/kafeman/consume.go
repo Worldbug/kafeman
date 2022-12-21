@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/consumer"
 	"github.com/worldbug/kafeman/internal/handler"
 	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/serializers"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -18,10 +20,20 @@ import (
 	3. Просто выводить ошибки но не падать
 */
 
-func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) {
+func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) error {
 	wg := &sync.WaitGroup{}
 
-	h := handler.NewMessageHandler(wg, k.config, cmd)
+	topic, ok := k.config.Topics[cmd.Topic]
+	if !ok {
+		return ErrNoTopicProvided
+	}
+
+	decoder, err := k.getDecoder(topic)
+	if err != nil {
+		return err
+	}
+
+	h := handler.NewMessageHandler(wg, k.config, cmd, decoder)
 	c := consumer.NewSaramaConsuemr(h, k.config, cmd)
 
 	c.StartConsume(ctx)
@@ -29,6 +41,17 @@ func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) {
 	go h.Start()
 	wg.Wait()
 	h.Stop()
+
+	return nil
+}
+
+func (k *kafeman) getDecoder(topic config.Topic) (handler.Decoder, error) {
+	if topic.ProtoType == "" || len(topic.ProtoPaths) == 0 {
+		return serializers.NewRawSerializer(), nil
+	}
+
+	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
+
 }
 
 func toIntSlice(input []int32) []int {

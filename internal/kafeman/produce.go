@@ -8,55 +8,77 @@ import (
 	"os"
 	"sync"
 
+	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/producer"
-	"github.com/worldbug/kafeman/internal/proto"
+	"github.com/worldbug/kafeman/internal/serializers"
 )
 
 type ProduceCMD struct {
-	Topic      string
+	Topic string
+	// One of ......
+	Encoder    string
 	BufferSize int
+	Input      io.Reader
+	Output     io.Writer
 }
 
-// TODO: закрывать обработку ввода если кидаем через пайплайн
-func (k *kafeman) Produce(ctx context.Context, cmd ProduceCMD) {
+func (k *kafeman) Produce(ctx context.Context, cmd ProduceCMD) error {
 	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+
 	input := make(chan producer.Message, 1)
+	topic, ok := k.config.Topics[cmd.Topic]
+	if !ok {
+		return ErrNoTopicProvided
+	}
+
+	encoder, err := k.GetEncoder(topic)
+	if err != nil {
+		return err
+	}
 
 	producer := producer.NewProducer(k.config, input)
 	go producer.Produce(cmd.Topic, wg)
 
-	k.marshall(cmd, input)
-	wg.Wait()
+	k.marshall(cmd, encoder, input)
 	close(input)
+
+	return nil
 }
 
-// TODO: доделать продюсерниг
+func (k *kafeman) GetEncoder(topic config.Topic) (Encoder, error) {
+	if topic.ProtoType == "" || len(topic.ProtoPaths) == 0 {
+		return serializers.NewRawSerializer(), nil
+	}
 
-func (k *kafeman) marshall(cmd ProduceCMD, input chan producer.Message) {
-	k.protoDecoder = *proto.NewProtobufDecoder(k.config.Topics[cmd.Topic].ProtoPaths)
+	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
+}
 
-	rawInput := make(chan []byte, 1)
-	go readLines(os.Stdin, cmd.BufferSize, rawInput)
+type Encoder interface {
+	Encode([]byte) ([]byte, error)
+}
+
+func (k *kafeman) marshall(cmd ProduceCMD, encoder Encoder, input chan producer.Message) {
+	rawInput := readLinesToChan(cmd.Input, cmd.BufferSize)
 	for raw := range rawInput {
-		if protoType := k.config.Topics[cmd.Topic].ProtoType; protoType != "" {
-			msg, err := k.protoDecoder.EncodeProto(raw, protoType)
-			if err != nil {
-				// TODO: stderror
-				continue
-			}
 
-			input <- producer.Message{
-				Key:   []byte{},
-				Value: msg,
-			}
-			continue
+		value, err := encoder.Encode(raw)
+		if err != nil {
+			// TODO: error
 		}
 
 		input <- producer.Message{
 			Key:   []byte{},
-			Value: raw,
+			Value: value,
 		}
 	}
+}
+
+func readLinesToChan(reader io.Reader, bufferSize int) <-chan []byte {
+	out := make(chan []byte)
+	go readLines(reader, bufferSize, out)
+
+	return out
 }
 
 func readLines(reader io.Reader, bufferSize int, out chan []byte) {
@@ -64,7 +86,6 @@ func readLines(reader io.Reader, bufferSize int, out chan []byte) {
 	if bufferSize > 0 {
 		scanner.Buffer(make([]byte, bufferSize), bufferSize)
 	}
-	// TODO: закрывать скан в случае если ввод из пайпа
 	for scanner.Scan() {
 		out <- scanner.Bytes()
 	}

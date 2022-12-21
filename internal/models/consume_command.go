@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 type ConsumeCommand struct {
 	Topic           string
@@ -13,4 +16,5 @@ type ConsumeCommand struct {
 	MessagesCount   int32
 	LimitedMessages bool
 	FromTime        time.Time
+	Output          io.Writer
 }

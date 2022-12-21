@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/worldbug/kafeman/internal/kafeman"
-	"github.com/worldbug/kafeman/internal/proto"
+	"github.com/worldbug/kafeman/internal/serializers"
 
 	"github.com/spf13/cobra"
 )
@@ -31,13 +31,17 @@ func init() {
 
 var ProduceExample = &cobra.Command{
 	Use:               "example TOPIC",
-	Short:             "Print example message scheme in topic (if config has scheme model) BETA",
+	Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: validTopicArgs,
 	PreRun:            setupProtoDescriptorRegistry,
 	Run: func(cmd *cobra.Command, args []string) {
 		topic := conf.Topics[args[0]]
-		decoder := proto.NewProtobufDecoder(topic.ProtoPaths)
+		// TODO: add other encoders support
+		decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
+		if err != nil {
+			errorExit("%+v", err)
+		}
 		example := decoder.GetExample(topic.ProtoType)
 		// TODO: сделать заполнение семпла базовыми данными
 		fmt.Fprintf(os.Stdout, "%+v", example)
@@ -52,16 +56,14 @@ var ProduceCMD = &cobra.Command{
 	PreRun:            setupProtoDescriptorRegistry,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
+
 		command := kafeman.ProduceCMD{
 			Topic:      args[0],
 			BufferSize: bufferSizeFlag,
+			Input:      os.Stdin,
+			Output:     os.Stdout,
 		}
 
 		k.Produce(cmd.Context(), command)
-		// out := make(chan []byte, 1)
-		// go readLines(os.Stdin, out)
-		// for e := range out {
-		// 	fmt.Print(e)
-		// }
 	},
 }

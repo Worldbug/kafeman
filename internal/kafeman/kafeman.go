@@ -2,6 +2,7 @@ package kafeman
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"sort"
@@ -9,8 +10,9 @@ import (
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/models"
-	"github.com/worldbug/kafeman/internal/proto"
 )
+
+var ErrNoTopicProvided = errors.New("No topic provided")
 
 func Newkafeman(
 	config config.Config,
@@ -29,8 +31,6 @@ type kafeman struct {
 	outWriter io.Writer
 	errWriter io.Writer
 	inReader  io.Reader
-
-	protoDecoder proto.ProtobufDecoder
 }
 
 func (k *kafeman) ListTopics(ctx context.Context) ([]models.Topic, error) {

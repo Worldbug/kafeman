@@ -7,10 +7,13 @@ import (
 
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/models"
-	"github.com/worldbug/kafeman/internal/proto"
 )
 
-func NewMessageHandler(wg *sync.WaitGroup, config config.Config, cmd models.ConsumeCommand) *MessageHandler {
+func NewMessageHandler(wg *sync.WaitGroup,
+	config config.Config,
+	cmd models.ConsumeCommand,
+	decoder Decoder,
+) *MessageHandler {
 	return &MessageHandler{
 		wg:        wg,
 		closeWG:   &sync.WaitGroup{},
@@ -18,18 +21,24 @@ func NewMessageHandler(wg *sync.WaitGroup, config config.Config, cmd models.Cons
 		cmd:       cmd,
 		outWriter: os.Stdout,
 		errWriter: os.Stderr,
+		decoder:   decoder,
 	}
 }
 
+type Decoder interface {
+	Decode([]byte) ([]byte, error)
+}
+
 type MessageHandler struct {
-	config       config.Config
-	cmd          models.ConsumeCommand
-	messages     chan models.Message
-	wg           *sync.WaitGroup
-	closeWG      *sync.WaitGroup
-	protoDecoder *proto.ProtobufDecoder
-	outWriter    io.Writer
-	errWriter    io.Writer
+	config    config.Config
+	cmd       models.ConsumeCommand
+	messages  chan models.Message
+	wg        *sync.WaitGroup
+	closeWG   *sync.WaitGroup
+	outWriter io.Writer
+	errWriter io.Writer
+
+	decoder Decoder
 
 	currentTopic string
 }
@@ -67,20 +76,14 @@ func (mg *MessageHandler) Handle(message models.Message) {
 }
 
 func (mg *MessageHandler) handle(message models.Message) {
-	mg.setProtoDecoder(message)
-
-	if protoType := mg.config.Topics[message.Topic].ProtoType; protoType != "" {
-		message = mg.handleProtoMessages(message, protoType)
+	value, err := mg.decoder.Decode(message.Value)
+	if err != nil {
+		// TODO: error
 	}
+
+	message.Value = value
 
 	mg.printMessage(message, mg.cmd.WithMeta)
-}
-
-func (mg *MessageHandler) setProtoDecoder(message models.Message) {
-	if mg.currentTopic != message.Topic {
-		mg.protoDecoder = proto.NewProtobufDecoder(mg.config.Topics[message.Topic].ProtoPaths)
-		mg.currentTopic = message.Topic
-	}
 }
 
 func (mg *MessageHandler) Stop() {

@@ -35,6 +35,7 @@ func init() {
 	RootCMD.AddCommand(TopicsCMD)
 
 	TopicCMD.AddCommand(DescribeCMD)
+	TopicCMD.AddCommand(TopicConsumersCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	// TopicCMD.AddCommand(createTopicCmd)
 	// TopicCMD.AddCommand(deleteTopicCmd)
@@ -118,16 +119,6 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 	w.Flush()
 
 	if !noHeaderFlag {
-		fmt.Fprintf(w, "Consumers:\n")
-		fmt.Fprintf(w, "\tName\tMembers\n")
-		fmt.Fprintf(w, "\t----\t-------\n")
-	}
-	for _, c := range topicInfo.Consumers {
-		fmt.Fprintf(w, "\t%s\t%d\n", c.Name, c.MembersCount)
-	}
-	w.Flush()
-
-	if !noHeaderFlag {
 		fmt.Fprintf(w, "Config:\n")
 		fmt.Fprintf(w, "\tKey\tValue\tRead only\tSensitive\n")
 		fmt.Fprintf(w, "\t---\t-----\t---------\t---------\n")
@@ -168,4 +159,38 @@ var LsTopicsCMD = &cobra.Command{
 		}
 		w.Flush()
 	},
+}
+
+var TopicConsumersCMD = &cobra.Command{
+	Use:               "consumers",
+	Short:             "List topic consumers",
+	ValidArgsFunction: validTopicArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+		consumers, err := k.ListTopicConsumers(cmd.Context(), args[0])
+		if err != nil {
+			errorExit("%+v", err)
+		}
+
+		if asJsonFlag {
+			printJson(consumers)
+			return
+		}
+
+		topicConsumersPrint(consumers)
+	},
+}
+
+func topicConsumersPrint(consumers models.TopicConsumers) {
+	w := newTabWriter()
+	defer w.Flush()
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "Consumers:\n")
+		fmt.Fprintf(w, "\tName\tMembers\n")
+		fmt.Fprintf(w, "\t----\t-------\n")
+	}
+	for _, c := range consumers.Consumers {
+		fmt.Fprintf(w, "\t%s\t%d\n", c.Name, c.MembersCount)
+	}
 }

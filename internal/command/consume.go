@@ -6,7 +6,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
-	"github.com/worldbug/kafeman/internal/proto"
+	"github.com/worldbug/kafeman/internal/serializers"
 
 	"github.com/spf13/cobra"
 )
@@ -55,8 +55,8 @@ var ConsumeCMD = &cobra.Command{
 		offset := getOffsetFromFlag()
 		topic := args[0]
 
-		pk := kafeman.Newkafeman(conf)
-		pk.Consume(cmd.Context(), models.ConsumeCommand{
+		k := kafeman.Newkafeman(conf)
+		k.Consume(cmd.Context(), models.ConsumeCommand{
 			Topic:          topic,
 			ConsumerGroup:  groupIDFlag,
 			Partitions:     partitionsFlag,
@@ -96,7 +96,7 @@ func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]str
 
 var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 	if protoType != "" {
-		r, err := proto.NewDescriptorRegistry(protoFiles, protoExclude)
+		r, err := serializers.NewDescriptorRegistry(protoFiles, protoExclude)
 		if err != nil {
 			errorExit("Failed to load protobuf files: %v\n", err)
 		}
