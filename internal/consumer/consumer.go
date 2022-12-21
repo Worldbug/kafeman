@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/config"
@@ -14,22 +15,44 @@ import (
 
 func NewSaramaConsuemr(
 	config config.Config,
-	command models.ConsumeCommand,
+	consumerGroupID string,
+	topic string,
+	partitions []int32,
+	offset int64,
+	messagesLimit int32,
+	commit bool,
+	follow bool,
+	fromTime time.Time,
 ) *Consumer {
 	return &Consumer{
-		config:  config,
-		command: command,
+		config:          config,
+		consumerGroupID: consumerGroupID,
+		topic:           topic,
+		partitions:      partitions,
+		offset:          offset,
+		messagesLimit:   messagesLimit,
+		commit:          commit,
+		follow:          follow,
+		fromTime:        fromTime,
 	}
 }
 
 type Consumer struct {
 	config   config.Config
-	command  models.ConsumeCommand
 	messages chan models.Message
+
+	consumerGroupID string
+	topic           string
+	partitions      []int32
+	offset          int64
+	messagesLimit   int32
+	commit          bool
+	follow          bool
+	fromTime        time.Time
 }
 
 func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, error) {
-	if c.command.ConsumerGroup != "" {
+	if c.consumerGroupID != "" {
 		return c.consumerGroup(ctx)
 	}
 
@@ -39,7 +62,6 @@ func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, err
 func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
 	saramaConfig := c.getSaramaConfig()
-	topic := c.command.Topic
 
 	consumer, err := sarama.NewConsumer(addrs, saramaConfig)
 	if err != nil {
@@ -47,17 +69,15 @@ func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) 
 	}
 	// set outputRate
 
-	partitions := c.command.Partitions
-
-	if len(partitions) == 0 {
-		partitions, err = consumer.Partitions(topic)
+	if len(c.partitions) == 0 {
+		c.partitions, err = consumer.Partitions(c.topic)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	c.messages = make(chan models.Message, len(partitions))
-	go c.asyncConsumersWorkGroup(ctx, consumer, topic, partitions)
+	c.messages = make(chan models.Message, len(c.partitions))
+	go c.asyncConsumersWorkGroup(ctx, consumer, c.topic, c.partitions)
 
 	return c.messages, nil
 
@@ -71,10 +91,10 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 		wg.Add(1)
 		go func(partition int32, wg *sync.WaitGroup) {
 			defer wg.Done()
-			offset := c.command.Offset
+			offset := c.offset
 
-			if c.command.FromTime.UnixNano() != 0 {
-				offset = adm.GetOffsetByTime(ctx, partition, topic, c.command.FromTime)
+			if c.fromTime.UnixNano() != 0 {
+				offset = adm.GetOffsetByTime(ctx, partition, topic, c.fromTime)
 			}
 
 			cp, e := consumer.ConsumePartition(topic, partition, offset)
@@ -91,7 +111,7 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 }
 
 func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
-	left := c.command.MessagesCount
+	left := c.messagesLimit
 
 	for {
 		select {
@@ -102,7 +122,7 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 
 			c.messages <- models.MessageFromSarama(msg)
 
-			if !c.command.Follow && left == 0 {
+			if !c.follow && left == 0 {
 				lastOffset := cp.HighWaterMarkOffset()
 				currentOffset := msg.Offset
 				if lastOffset-currentOffset-1 == 0 {
@@ -110,11 +130,11 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 				}
 			}
 
-			if c.command.MessagesCount != 0 {
+			if c.messagesLimit != 0 {
 				left--
 			}
 
-			if c.command.MessagesCount != 0 && left == 0 {
+			if c.messagesLimit != 0 && left == 0 {
 				return nil
 			}
 
@@ -127,10 +147,10 @@ func (c *Consumer) getSaramaConfig() *sarama.Config {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Version = sarama.V1_1_0_0
 	saramaConfig.Producer.Return.Successes = true
-	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.command.CommitMessages
+	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.commit
 
-	if c.command.Offset == sarama.OffsetNewest || c.command.Offset == sarama.OffsetOldest {
-		saramaConfig.Consumer.Offsets.Initial = c.command.Offset
+	if c.offset == sarama.OffsetNewest || c.offset == sarama.OffsetOldest {
+		saramaConfig.Consumer.Offsets.Initial = c.offset
 	}
 
 	return saramaConfig
@@ -139,11 +159,10 @@ func (c *Consumer) getSaramaConfig() *sarama.Config {
 func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
 	saramaConfig := c.getSaramaConfig()
-	topic := c.command.Topic
-	group := c.command.ConsumerGroup
+	topic := c.topic
 
 	// defer cg.close
-	cg, err := sarama.NewConsumerGroup(addrs, group, saramaConfig)
+	cg, err := sarama.NewConsumerGroup(addrs, c.consumerGroupID, saramaConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +172,7 @@ func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, er
 		return nil, err
 	}
 
-	partitions := c.command.Partitions
+	partitions := c.partitions
 
 	if len(partitions) == 0 {
 		partitions, err = cli.Partitions(topic)
@@ -179,7 +198,7 @@ func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error {
 
 func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	// TODO: Бага. Для консьюминга с cg у нас счетчик работает на все сообщения а не на сообщения в партиции
-	left := c.command.MessagesCount
+	left := c.messagesLimit
 
 	for {
 		select {
@@ -192,7 +211,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 			c.messages <- models.MessageFromSarama(msg)
 
-			if !c.command.Follow {
+			if !c.follow {
 				lastOffset := claim.HighWaterMarkOffset()
 				currentOffset := msg.Offset
 				if lastOffset-currentOffset-1 == 0 {
@@ -201,11 +220,11 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 			}
 
-			if c.command.MessagesCount != 0 {
+			if c.messagesLimit != 0 {
 				left--
 			}
 
-			if c.command.MessagesCount != 0 && left == 0 {
+			if c.messagesLimit != 0 && left == 0 {
 				return nil
 			}
 

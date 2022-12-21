@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/serializers"
@@ -23,6 +24,7 @@ var (
 	protoFiles   []string
 	protoExclude []string
 	protoType    string
+	encoding     string
 
 	offsetFlag        string
 	groupIDFlag       string
@@ -38,6 +40,7 @@ func init() {
 	RootCMD.AddCommand(ConsumeCMD)
 
 	ConsumeCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
+	ConsumeCMD.Flags().StringVar(&encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
 	ConsumeCMD.Flags().StringVarP(&groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
 	ConsumeCMD.Flags().BoolVarP(&followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	ConsumeCMD.Flags().BoolVar(&commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
@@ -59,7 +62,8 @@ var ConsumeCMD = &cobra.Command{
 		topic := args[0]
 
 		k := kafeman.Newkafeman(conf)
-		messages, err := k.Consume(cmd.Context(), models.ConsumeCommand{
+
+		command := kafeman.ConsumeCommand{
 			Topic:          topic,
 			ConsumerGroup:  groupIDFlag,
 			Partitions:     partitionsFlag,
@@ -69,8 +73,14 @@ var ConsumeCMD = &cobra.Command{
 			WithMeta:       printMetaFlag, // TODO: remove
 			MessagesCount:  messagesCountFlag,
 			FromTime:       parseTime(fromAtFlag),
-		})
+		}
 
+		decoder, err := getDecoder(command)
+		if err != nil {
+			errorExit("%+v", err)
+		}
+
+		messages, err := k.Consume(cmd.Context(), command, decoder)
 		if err != nil {
 			errorExit("%+v", err)
 		}
@@ -79,6 +89,45 @@ var ConsumeCMD = &cobra.Command{
 			printMessage(message, printMetaFlag)
 		}
 	},
+}
+
+func getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder, error) {
+	topicConfig, ok := conf.Topics[cmd.Topic]
+	if !ok && encoding == "" {
+		return serializers.NewRawSerializer(), nil
+	}
+
+	// override encoding
+	if encoding != "" {
+		topicConfig.Encoding = config.Encoding(encoding)
+	}
+
+	// force type
+	switch topicConfig.Encoding {
+	case config.RAW:
+		return serializers.NewRawSerializer(), nil
+	case config.Avro:
+		return serializers.NewAvroSerializer(topicConfig.AvroSchemaURL, topicConfig.AvroSchemaID)
+	case config.Protobuf:
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+	case config.MSGPack:
+		return serializers.NewMessagePackSerializer(), nil
+	case config.Base64:
+		return serializers.NewBase64Serializer(), nil
+	}
+
+	// AVRO DECODER
+	if topicConfig.AvroSchemaURL != "" {
+		return serializers.NewAvroSerializer(topicConfig.AvroSchemaURL, topicConfig.AvroSchemaID)
+	}
+
+	// PROTO DECODER
+	if topicConfig.ProtoType != "" || len(topicConfig.ProtoPaths) != 0 {
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+	}
+
+	// RAW DECODER
+	return serializers.NewRawSerializer(), nil
 }
 
 func printMessage(message models.Message, printMeta bool) {
