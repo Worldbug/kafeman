@@ -40,15 +40,18 @@ func init() {
 	RootCMD.AddCommand(ConsumeCMD)
 
 	ConsumeCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
+	ConsumeCMD.RegisterFlagCompletionFunc("offset", offsetCompletion)
 	ConsumeCMD.Flags().StringVar(&encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
+	ConsumeCMD.RegisterFlagCompletionFunc("force-encoding", encodingCompletion)
 	ConsumeCMD.Flags().StringVarP(&groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
+	ConsumeCMD.RegisterFlagCompletionFunc("group", groupCompletion)
 	ConsumeCMD.Flags().BoolVarP(&followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	ConsumeCMD.Flags().BoolVar(&commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
 	ConsumeCMD.Flags().BoolVar(&printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
 	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
 	ConsumeCMD.Flags().Int32VarP(&messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
 	ConsumeCMD.Flags().StringVar(&fromAtFlag, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
-
+	ConsumeCMD.RegisterFlagCompletionFunc("from", timeCompletion)
 }
 
 var ConsumeCMD = &cobra.Command{

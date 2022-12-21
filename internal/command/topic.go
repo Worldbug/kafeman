@@ -27,7 +27,6 @@ var (
 	replicasFlag int16
 	noHeaderFlag bool
 	compactFlag  bool
-	//
 )
 
 func init() {

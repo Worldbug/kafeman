@@ -39,7 +39,9 @@ func init() {
 	GroupCommitCMD.Flags().BoolVar(&allPartitionsFlag, "all-partitions", false, "apply to all partitions")
 	GroupCommitCMD.Flags().IntVar(&partitionFag, "p", 0, "partition")
 	GroupCommitCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
+	GroupCommitCMD.RegisterFlagCompletionFunc("offset", offsetCompletion)
 	GroupCommitCMD.Flags().StringVarP(&topicFlag, "topic", "t", "", "topic to set offset")
+	GroupCommitCMD.RegisterFlagCompletionFunc("topic", topicCompletion)
 	GroupCommitCMD.Flags().BoolVar(&noConfirmFlag, "y", false, "Do not prompt for confirmation")
 }
 
