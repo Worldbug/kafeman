@@ -5,40 +5,37 @@ import (
 
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/config"
-	"github.com/worldbug/kafeman/internal/handler"
+
 	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/Shopify/sarama"
 )
 
 func NewSaramaConsuemr(
-	handler *handler.MessageHandler,
 	config config.Config,
 	command models.ConsumeCommand,
 ) *Consumer {
 	return &Consumer{
 		config:  config,
 		command: command,
-		handler: handler,
 	}
 }
 
 type Consumer struct {
-	config  config.Config
-	command models.ConsumeCommand
-	handler *handler.MessageHandler
+	config   config.Config
+	command  models.ConsumeCommand
+	messages chan models.Message
 }
 
-func (c *Consumer) StartConsume(ctx context.Context) {
+func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, error) {
 	if c.command.ConsumerGroup != "" {
-		c.consumerGroup(ctx)
-		return
+		return c.consumerGroup(ctx)
 	}
 
-	c.consumer(ctx)
+	return c.consumer(ctx)
 }
 
-func (c *Consumer) consumerGroup(ctx context.Context) {
+func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
 	saramaConfig := c.getSaramaConfig()
 	topic := c.command.Topic
@@ -46,47 +43,53 @@ func (c *Consumer) consumerGroup(ctx context.Context) {
 
 	cg, err := sarama.NewConsumerGroup(addrs, group, saramaConfig)
 	if err != nil {
-		// TODO: ERROR handling
-		return
+		return nil, err
 	}
 	// TODO: defer close
 
 	cli, err := sarama.NewClient(c.config.GetCurrentCluster().Brokers, saramaConfig)
 	if err != nil {
-		// TODO: ERROR handling
-		return
+		return nil, err
 	}
 
-	partitions, err := cli.Partitions(topic)
-	if err != nil {
-		// TODO: ERROR handling
-		return
+	partitions := c.command.Partitions
+
+	if len(partitions) == 0 {
+		partitions, err = cli.Partitions(topic)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	c.handler.InitInput(len(partitions))
+	c.messages = make(chan models.Message, len(partitions))
 	go cg.Consume(ctx, []string{topic}, c)
+
+	return c.messages, nil
 }
 
-func (c *Consumer) consumer(ctx context.Context) {
+func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
 	saramaConfig := c.getSaramaConfig()
 	topic := c.command.Topic
 
 	consumer, err := sarama.NewConsumer(addrs, saramaConfig)
 	if err != nil {
-		// TODO: ERROR handling
-		return
+		return nil, err
 	}
 	// set outputRate
-	partitions, err := consumer.Partitions(topic)
-	if err != nil {
-		// TODO: ERROR handling
-		return
+
+	partitions := c.command.Partitions
+
+	if len(partitions) == 0 {
+		partitions, err = consumer.Partitions(topic)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	adm := admin.NewAdmin(c.config)
 
-	c.handler.InitInput(len(partitions))
+	c.messages = make(chan models.Message, len(partitions))
 
 	for _, p := range partitions {
 		// TODO: set offset per partition mode
@@ -107,10 +110,11 @@ func (c *Consumer) consumer(ctx context.Context) {
 
 	}
 
+	return c.messages, nil
+
 }
 
 func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
-	defer c.handler.Close()
 	left := c.command.MessagesCount
 
 	for {
@@ -120,8 +124,7 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 				return nil
 			}
 
-			message := models.MessageFromSarama(msg)
-			c.handler.Handle(message)
+			c.messages <- models.MessageFromSarama(msg)
 
 			if !c.command.Follow && left == 0 {
 				lastOffset := cp.HighWaterMarkOffset()
@@ -166,7 +169,6 @@ func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	defer c.handler.Close()
 	left := c.command.MessagesCount
 
 	for {
@@ -178,8 +180,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				continue
 			}
 
-			message := models.MessageFromSarama(msg)
-			c.handler.Handle(message)
+			c.messages <- models.MessageFromSarama(msg)
 
 			if !c.command.Follow {
 				lastOffset := claim.HighWaterMarkOffset()

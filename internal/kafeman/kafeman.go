@@ -14,6 +14,16 @@ import (
 
 var ErrNoTopicProvided = errors.New("No topic provided")
 
+// Encoder declare how to encode message
+type Encoder interface {
+	Encode([]byte) ([]byte, error)
+}
+
+// Encoder declare how to encode message
+type Decoder interface {
+	Decode([]byte) ([]byte, error)
+}
+
 func Newkafeman(
 	config config.Config,
 ) *kafeman {

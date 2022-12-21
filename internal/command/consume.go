@@ -1,7 +1,10 @@
 package command
 
 import (
+	"encoding/json"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/worldbug/kafeman/internal/kafeman"
@@ -56,18 +59,83 @@ var ConsumeCMD = &cobra.Command{
 		topic := args[0]
 
 		k := kafeman.Newkafeman(conf)
-		k.Consume(cmd.Context(), models.ConsumeCommand{
+		messages, err := k.Consume(cmd.Context(), models.ConsumeCommand{
 			Topic:          topic,
 			ConsumerGroup:  groupIDFlag,
 			Partitions:     partitionsFlag,
 			Offset:         offset,
 			CommitMessages: commitFlag,
 			Follow:         followFlag,
-			WithMeta:       printMetaFlag,
+			WithMeta:       printMetaFlag, // TODO: remove
 			MessagesCount:  messagesCountFlag,
 			FromTime:       parseTime(fromAtFlag),
 		})
+
+		if err != nil {
+			errorExit("%+v", err)
+		}
+
+		for message := range messages {
+			printMessage(message, printMetaFlag)
+		}
 	},
+}
+
+func printMessage(message models.Message, printMeta bool) {
+	if !printMeta {
+		fmt.Fprintln(outWriter, string(message.Value))
+		return
+	}
+
+	Print(message)
+}
+
+func Print(data models.Message) {
+	if isJSON(data.Value) {
+		ms := messageToPrintable(data)
+		v := ms.Value
+		ms.Value = ""
+		msg, _ := json.Marshal(ms)
+		m := strings.Replace(string(msg), `"value":""`, fmt.Sprintf(`"value":%v`, v), 1)
+		fmt.Fprintln(outWriter, m)
+		return
+	}
+
+	msg, _ := json.Marshal(messageToPrintable(data))
+	fmt.Fprintln(outWriter, string(msg))
+}
+
+type PrintableMessage struct {
+	Headers   map[string]string `json:"headers,omitempty"`
+	Timestamp time.Time         `json:"timestamp,omitempty"`
+
+	Topic     string `json:"topic"`
+	Partition int32  `json:"partition"`
+	Offset    int64  `json:"offset"`
+	Key       string `json:"key,omitempty"`
+	Value     string `json:"value"`
+}
+
+func messageToPrintable(msg models.Message) PrintableMessage {
+	return PrintableMessage{
+		Topic:     msg.Topic,
+		Partition: msg.Partition,
+		Offset:    msg.Offset,
+
+		Headers:   msg.Headers,
+		Timestamp: msg.Timestamp.UTC(),
+
+		Key:   string(msg.Key),
+		Value: string(msg.Value),
+	}
+}
+
+func isJSON(data []byte) bool {
+	var i interface{}
+	if err := json.Unmarshal(data, &i); err == nil {
+		return true
+	}
+	return false
 }
 
 func parseTime(str string) time.Time {

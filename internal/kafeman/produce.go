@@ -54,10 +54,6 @@ func (k *kafeman) GetEncoder(topic config.Topic) (Encoder, error) {
 	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 }
 
-type Encoder interface {
-	Encode([]byte) ([]byte, error)
-}
-
 func (k *kafeman) marshall(cmd ProduceCMD, encoder Encoder, input chan producer.Message) {
 	rawInput := readLinesToChan(cmd.Input, cmd.BufferSize)
 	for raw := range rawInput {

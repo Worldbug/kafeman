@@ -1,5 +1,7 @@
 package serializers
 
+// Hold implementations for kafeman.Decoder/kafeman.Encoder
+
 func NewRawSerializer() *RawSerializer {
 	return &RawSerializer{}
 }
