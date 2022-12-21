@@ -1,24 +1,17 @@
 package command
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/worldbug/kafeman/internal/config"
-	"github.com/worldbug/kafeman/internal/proto"
+	"github.com/worldbug/kafeman/internal/serializers"
 
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"
 )
-
-func init() {
-	var err error
-	conf, err = config.LoadConfig("")
-	if err != nil {
-		fmt.Fprintln(errWriter, "Can`t load config")
-	}
-}
 
 var (
 	conf config.Config
@@ -32,7 +25,7 @@ var (
 	commit  string = "HEAD"
 	version string = "latest"
 
-	protoRegistry *proto.DescriptorRegistry
+	protoRegistry *serializers.DescriptorRegistry
 )
 
 var RootCMD = &cobra.Command{
@@ -53,4 +46,19 @@ var RootCMD = &cobra.Command{
 func errorExit(format string, a ...interface{}) {
 	fmt.Fprintf(errWriter, format+"\n", a...)
 	os.Exit(1)
+}
+
+func inTTY() bool {
+	fi, _ := os.Stdout.Stat()
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+// TODO: перенести все на этот метод
+func printJson(model any) {
+	raw, err := json.Marshal(model)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprintln(outWriter, string(raw))
 }

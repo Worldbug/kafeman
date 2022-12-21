@@ -11,7 +11,6 @@ import (
 var ErrNoTopic = errors.New("No topic in cluster")
 
 func (k *kafeman) GetTopicInfo(ctx context.Context, topic string) (models.Topic, error) {
-	// TODO: decribe topic
 	topics, err := k.ListTopics(ctx)
 	if err != nil {
 		return models.Topic{}, err
@@ -33,7 +32,14 @@ func (k *kafeman) DescribeTopic(ctx context.Context, topic string) (models.Topic
 		return topicInfo, err
 	}
 
-	topicInfo.Consumers, err = adm.GetTopicConsumers(ctx, topic)
-
 	return topicInfo, err
+}
+
+func (k *kafeman) ListTopicConsumers(ctx context.Context, topic string) (models.TopicConsumers, error) {
+	adm := admin.NewAdmin(k.config)
+	consumers, err := adm.GetTopicConsumers(ctx, topic)
+
+	return models.TopicConsumers{
+		Consumers: consumers,
+	}, err
 }

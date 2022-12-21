@@ -2,14 +2,11 @@ package kafeman
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/worldbug/kafeman/internal/consumer"
-	"github.com/worldbug/kafeman/internal/handler"
 	"github.com/worldbug/kafeman/internal/models"
-
-	"github.com/segmentio/kafka-go"
+	"github.com/worldbug/kafeman/internal/serializers"
 )
 
 /*
@@ -18,48 +15,63 @@ import (
 	3. Просто выводить ошибки но не падать
 */
 
-func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) {
+func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) (<-chan models.Message, error) {
 	wg := &sync.WaitGroup{}
 
-	h := handler.NewMessageHandler(wg, k.config, cmd)
-	c := consumer.NewSaramaConsuemr(h, k.config, cmd)
+	decoder, err := k.getDecoder(cmd.Topic)
+	if err != nil {
+		return nil, ErrNoTopicProvided
+	}
 
-	c.StartConsume(ctx)
+	c := consumer.NewSaramaConsuemr(k.config, cmd)
 
-	go h.Start()
+	messages, err := c.StartConsume(ctx)
+	if err != nil {
+		return nil, ErrNoTopicProvided
+	}
+
+	output := make(chan models.Message)
+	go k.decodeMessages(messages, output, wg, decoder)
 	wg.Wait()
-	h.Stop()
+
+	return output, nil
 }
 
-func toIntSlice(input []int32) []int {
-	output := make([]int, len(input))
-	for i, v := range input {
-		output[i] = int(v)
+func (k *kafeman) getDecoder(topic string) (Decoder, error) {
+	topicConfig, ok := k.config.Topics[topic]
+	if !ok {
+		return serializers.NewRawSerializer(), nil
 	}
 
-	return output
+	if topicConfig.ProtoType == "" || len(topicConfig.ProtoPaths) == 0 {
+		return serializers.NewRawSerializer(), nil
+	}
+
+	return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
 }
 
-func (k *kafeman) partitions(partitions []int, topic string) []int {
-	conn, err := kafka.Dial("tcp", k.config.GetCurrentCluster().Brokers[0])
-	if err != nil {
-		panic(err.Error())
-	}
-	defer conn.Close()
+func (k *kafeman) decodeMessages(
+	input <-chan models.Message, output chan<- models.Message,
+	wg *sync.WaitGroup, decoder Decoder) {
+	wg.Add(1)
+	defer wg.Done()
+	defer close(output)
 
-	parts, err := conn.ReadPartitions(topic)
-	if err != nil {
-		fmt.Fprintln(k.errWriter, err)
-		return []int{}
-	}
+	for {
+		select {
+		case message, ok := <-input:
+			if !ok {
+				return
+			}
 
-	if len(partitions) != 0 {
-		return partitions
-	}
+			// Потом это станет valueDecoder
+			value, err := decoder.Decode(message.Value)
+			if err != nil {
+				// TODO: error
+			}
 
-	for _, p := range parts {
-		partitions = append(partitions, p.ID)
+			message.Value = value
+			output <- message
+		}
 	}
-
-	return partitions
 }

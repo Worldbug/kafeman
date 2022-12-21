@@ -63,7 +63,10 @@ func (a *Admin) describeTopicPartitons(ctx context.Context, topic string) ([]mod
 
 	partitonsInfo := make([]models.PartitionInfo, 0, len(topicDetails[0].Partitions))
 	for _, partition := range topicDetails[0].Partitions {
-		offsets := a.fetchLastOffset(ctx, topic, int(partition.ID))
+		offsets, err := a.fetchLastOffset(ctx, topic, int(partition.ID))
+		if err != nil {
+			return nil, err
+		}
 
 		partitonsInfo = append(partitonsInfo, models.PartitionInfo{
 			Partition:      partition.ID,

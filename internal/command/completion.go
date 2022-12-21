@@ -28,6 +28,12 @@ Fish:
 	$ kafeman completion fish | source
 	# To load completions for each session, execute once:
 	$ kafeman completion fish > ~/.config/fish/completions/kafeman.fish
+
+PowerShell:
+	PS> %[1]s completion powershell | Out-String | Invoke-Expression
+	# To load completions for every new session, run:
+	PS> %[1]s completion powershell > %[1]s.ps1
+	# and source this file from your PowerShell profile.
 `
 
 var completionCmd = &cobra.Command{

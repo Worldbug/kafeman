@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/worldbug/kafeman/internal/models"
@@ -45,6 +44,7 @@ func (a *Admin) DescribeGroup(ctx context.Context, group string) models.Group {
 
 				offsetsMap[gmt.Topic] = make(map[int]int64)
 				wg.Add(1)
+				// TODO: error handling
 				go a.asyncGetLastOffset(ctx, wg, mu, offsetsMap, gmt.Topic, gmt.Partitions...)
 
 				groupTopis[gmt.Topic] = append(groupTopis[gmt.Topic], gmt.Partitions...)
@@ -84,7 +84,7 @@ func (a *Admin) DescribeGroup(ctx context.Context, group string) models.Group {
 	return gd
 }
 
-func (a *Admin) fetchLastOffset(ctx context.Context, topic string, partition int) models.Offset {
+func (a *Admin) fetchLastOffset(ctx context.Context, topic string, partition int) (models.Offset, error) {
 	cli := a.client()
 	resp, err := cli.Fetch(ctx, &kafka.FetchRequest{
 		Topic:     topic,
@@ -92,12 +92,11 @@ func (a *Admin) fetchLastOffset(ctx context.Context, topic string, partition int
 		Offset:    -1,
 	})
 	if err != nil {
-		fmt.Println(err)
-		return models.Offset{}
+		return models.Offset{}, err
 	}
 
 	return models.Offset{
 		Partition:      int32(resp.Partition),
 		HightWatermark: resp.HighWatermark,
-	}
+	}, nil
 }

@@ -12,13 +12,14 @@ import (
 )
 
 var (
-	configPath = ""
+	configPath      = ""
+	clusterOverride = ""
 )
 
 func init() {
 	RootCMD.AddCommand(ConfigCMD)
 	RootCMD.PersistentFlags().StringVar(&configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
-
+	RootCMD.PersistentFlags().StringVarP(&clusterOverride, "cluster", "c", "", "set a temporary current cluster")
 	// ConfigCMD.AddCommand(configImportCmd)
 	// ConfigCMD.AddCommand(configUseCmd)
 	// ConfigCMD.AddCommand(configLsCmd)
@@ -30,6 +31,28 @@ func init() {
 
 	ConfigCMD.AddCommand(ConfigInitCMD)
 
+	cobra.OnInitialize(onInit)
+}
+
+func onInit() {
+	var err error
+	conf, err = config.LoadConfig("")
+	if err != nil {
+		fmt.Fprintln(errWriter, "Can`t load config, use localhost:9092")
+	}
+
+	if clusterOverride != "" {
+		conf.CurrentCluster = clusterOverride
+	}
+
+	// if config not inited
+	if len(conf.Clusters) == 0 {
+		conf.CurrentCluster = "local"
+		conf.Clusters = append(conf.Clusters, config.Cluster{
+			Name:    "local",
+			Brokers: []string{"localhost:9092"},
+		})
+	}
 }
 
 var ConfigCMD = &cobra.Command{
@@ -42,7 +65,7 @@ var ConfigCurrentContextCMD = &cobra.Command{
 	Short: "Displays the current context",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(conf.CurrentCluster)
+		fmt.Fprintf(os.Stdout, "%s", conf.CurrentCluster)
 	},
 }
 
