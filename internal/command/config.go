@@ -20,6 +20,7 @@ func init() {
 	RootCMD.AddCommand(ConfigCMD)
 	RootCMD.PersistentFlags().StringVar(&configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
 	RootCMD.PersistentFlags().StringVarP(&clusterOverride, "cluster", "c", "", "set a temporary current cluster")
+	RootCMD.RegisterFlagCompletionFunc("cluster", clusterCompletion)
 	// ConfigCMD.AddCommand(configImportCmd)
 	// ConfigCMD.AddCommand(configUseCmd)
 	// ConfigCMD.AddCommand(configLsCmd)

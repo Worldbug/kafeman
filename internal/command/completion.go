@@ -1,7 +1,10 @@
 package command
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
+	"github.com/worldbug/kafeman/internal/kafeman"
 )
 
 func init() {
@@ -65,4 +68,65 @@ var completionCmd = &cobra.Command{
 			}
 		}
 	},
+}
+
+func clusterCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	clusters := make([]string, 0, len(conf.Clusters))
+
+	for _, cluster := range conf.Clusters {
+		clusters = append(clusters, cluster.Name)
+	}
+
+	return clusters, cobra.ShellCompDirectiveNoFileComp
+}
+
+func encodingCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	return []string{
+		"raw", "proto", "avro", "msgpack", "base64",
+	}, cobra.ShellCompDirectiveNoFileComp
+}
+
+func groupCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	list, _ := kafeman.Newkafeman(conf).GetGroupsList(cmd.Context())
+	return list, cobra.ShellCompDirectiveNoFileComp
+}
+
+func offsetCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	return []string{
+		"newest", "oldest",
+	}, cobra.ShellCompDirectiveNoFileComp
+}
+
+func partitionerCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	return []string{
+		"jvm", "rand", "rr", "hash",
+	}, cobra.ShellCompDirectiveNoFileComp
+}
+
+func timeCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	return []string{
+		time.Now().Format("2006-01-02T15:04:05"),
+	}, cobra.ShellCompDirectiveNoFileComp
+}
+
+func topicCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	topicsSuggest := make([]string, 0)
+
+	topics, err := kafeman.Newkafeman(conf).ListTopics(cmd.Context())
+	if err != nil {
+		return topicsSuggest, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	for _, topic := range topics {
+		topicsSuggest = append(topicsSuggest, topic.Name)
+	}
+
+	return topicsSuggest, cobra.ShellCompDirectiveNoFileComp
 }

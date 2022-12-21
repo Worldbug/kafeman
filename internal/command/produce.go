@@ -13,7 +13,7 @@ import (
 
 var (
 	keyFlag         string
-	partitionerFlag string
+	partitionerFlag string // TODO: implement
 	partitionFlag   int32
 	timestampFlag   string
 	bufferSizeFlag  int
@@ -25,7 +25,9 @@ func init() {
 
 	ProduceCMD.Flags().StringVarP(&keyFlag, "key", "k", "", "Key for the record. Currently only strings are supported.")
 	ProduceCMD.Flags().StringVar(&encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
+	ProduceCMD.RegisterFlagCompletionFunc("force-encoding", encodingCompletion)
 	ProduceCMD.Flags().StringVar(&partitionerFlag, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")
+	ProduceCMD.RegisterFlagCompletionFunc("partitioner", partitionerCompletion)
 	ProduceCMD.Flags().StringVar(&timestampFlag, "timestamp", "", "Select timestamp for record")
 	ProduceCMD.Flags().Int32VarP(&partitionFlag, "partition", "p", -1, "Partition to produce to")
 	ProduceCMD.Flags().IntVarP(&bufferSizeFlag, "line-length-limit", "", 0, "line length limit in line input mode")
