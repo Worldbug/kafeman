@@ -8,15 +8,14 @@ import (
 	"os"
 	"sync"
 
-	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/producer"
 	"github.com/worldbug/kafeman/internal/serializers"
 )
 
 type ProduceCMD struct {
 	Topic string
-	// One of ......
-	Encoder    string
+	// One of raw,proto,avro,msgpack
+	// Encoder    string
 	BufferSize int
 	Input      io.Reader
 	Output     io.Writer
@@ -27,12 +26,8 @@ func (k *kafeman) Produce(ctx context.Context, cmd ProduceCMD) error {
 	defer wg.Wait()
 
 	input := make(chan producer.Message, 1)
-	topic, ok := k.config.Topics[cmd.Topic]
-	if !ok {
-		return ErrNoTopicProvided
-	}
 
-	encoder, err := k.getEncoder(topic)
+	encoder, err := k.getEncoder(cmd.Topic)
 	if err != nil {
 		return err
 	}
@@ -46,12 +41,17 @@ func (k *kafeman) Produce(ctx context.Context, cmd ProduceCMD) error {
 	return nil
 }
 
-func (k *kafeman) getEncoder(topic config.Topic) (Encoder, error) {
-	if topic.ProtoType == "" || len(topic.ProtoPaths) == 0 {
+func (k *kafeman) getEncoder(topic string) (Encoder, error) {
+	topicConfig, ok := k.config.Topics[topic]
+	if !ok {
 		return serializers.NewRawSerializer(), nil
 	}
 
-	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
+	if topicConfig.ProtoType == "" || len(topicConfig.ProtoPaths) == 0 {
+		return serializers.NewRawSerializer(), nil
+	}
+
+	return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
 }
 
 func (k *kafeman) encodeMessages(cmd ProduceCMD, encoder Encoder, input chan producer.Message) {

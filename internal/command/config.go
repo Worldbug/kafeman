@@ -65,7 +65,7 @@ var ConfigCurrentContextCMD = &cobra.Command{
 	Short: "Displays the current context",
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(conf.CurrentCluster)
+		fmt.Fprintf(os.Stdout, "%s", conf.CurrentCluster)
 	},
 }
 

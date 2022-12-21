@@ -72,12 +72,17 @@ func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
 	return clusterAdmin
 }
 
-func (a *Admin) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) {
+func (a *Admin) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) error {
 	defer wg.Done()
 	for _, partition := range parts {
-		offset := a.fetchLastOffset(ctx, topic, partition)
+		offset, err := a.fetchLastOffset(ctx, topic, partition)
+		if err != nil {
+			return err
+		}
 		mu.Lock()
 		offsetMap[topic][int(offset.Partition)] = offset.HightWatermark
 		mu.Unlock()
 	}
+
+	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/consumer"
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/serializers"
@@ -19,12 +18,7 @@ import (
 func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) (<-chan models.Message, error) {
 	wg := &sync.WaitGroup{}
 
-	topic, ok := k.config.Topics[cmd.Topic]
-	if !ok {
-		return nil, ErrNoTopicProvided
-	}
-
-	decoder, err := k.getDecoder(topic)
+	decoder, err := k.getDecoder(cmd.Topic)
 	if err != nil {
 		return nil, ErrNoTopicProvided
 	}
@@ -43,12 +37,17 @@ func (k *kafeman) Consume(ctx context.Context, cmd models.ConsumeCommand) (<-cha
 	return output, nil
 }
 
-func (k *kafeman) getDecoder(topic config.Topic) (Decoder, error) {
-	if topic.ProtoType == "" || len(topic.ProtoPaths) == 0 {
+func (k *kafeman) getDecoder(topic string) (Decoder, error) {
+	topicConfig, ok := k.config.Topics[topic]
+	if !ok {
 		return serializers.NewRawSerializer(), nil
 	}
 
-	return serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
+	if topicConfig.ProtoType == "" || len(topicConfig.ProtoPaths) == 0 {
+		return serializers.NewRawSerializer(), nil
+	}
+
+	return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
 }
 
 func (k *kafeman) decodeMessages(

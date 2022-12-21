@@ -36,38 +36,6 @@ func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, err
 	return c.consumer(ctx)
 }
 
-func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, error) {
-	addrs := c.config.GetCurrentCluster().Brokers
-	saramaConfig := c.getSaramaConfig()
-	topic := c.command.Topic
-	group := c.command.ConsumerGroup
-
-	cg, err := sarama.NewConsumerGroup(addrs, group, saramaConfig)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: defer close
-
-	cli, err := sarama.NewClient(c.config.GetCurrentCluster().Brokers, saramaConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	partitions := c.command.Partitions
-
-	if len(partitions) == 0 {
-		partitions, err = cli.Partitions(topic)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	c.messages = make(chan models.Message, len(partitions))
-	go cg.Consume(ctx, []string{topic}, c)
-
-	return c.messages, nil
-}
-
 func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
 	saramaConfig := c.getSaramaConfig()
@@ -168,15 +136,49 @@ func (c *Consumer) getSaramaConfig() *sarama.Config {
 	return saramaConfig
 }
 
+func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, error) {
+	addrs := c.config.GetCurrentCluster().Brokers
+	saramaConfig := c.getSaramaConfig()
+	topic := c.command.Topic
+	group := c.command.ConsumerGroup
+
+	// defer cg.close
+	cg, err := sarama.NewConsumerGroup(addrs, group, saramaConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	cli, err := sarama.NewClient(c.config.GetCurrentCluster().Brokers, saramaConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	partitions := c.command.Partitions
+
+	if len(partitions) == 0 {
+		partitions, err = cli.Partitions(topic)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	c.messages = make(chan models.Message, len(partitions))
+	go cg.Consume(ctx, []string{topic}, c)
+
+	return c.messages, nil
+}
+
 func (c *Consumer) Setup(_ sarama.ConsumerGroupSession) error {
 	return nil
 }
 
 func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error {
+	close(c.messages)
 	return nil
 }
 
 func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	// TODO: Бага. Для консьюминга с cg у нас счетчик работает на все сообщения а не на сообщения в партиции
 	left := c.command.MessagesCount
 
 	for {

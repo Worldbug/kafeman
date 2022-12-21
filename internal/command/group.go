@@ -3,6 +3,7 @@ package command
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"text/tabwriter"
 
@@ -68,10 +69,10 @@ var GroupDeleteCMD = &cobra.Command{
 
 		err := k.DeleteGroup(group)
 		if err != nil {
-			errorExit("Could not delete consumer group %v: %v\n", group, err.Error())
+			errorExit("Could not delete consumer group %v: %v", group, err.Error())
 		}
 
-		fmt.Printf("Deleted consumer group %v.\n", group)
+		fmt.Fprintf(os.Stdout, "Deleted consumer group %v.\n", group)
 	},
 }
 
@@ -84,7 +85,7 @@ var GroupLsCMD = &cobra.Command{
 		k := kafeman.Newkafeman(conf)
 		groupList, err := k.GetGroupsList(cmd.Context())
 		if err != nil {
-			fmt.Println(err)
+			errorExit("%+v", err)
 		}
 
 		sort.Slice(groupList, func(i int, j int) bool {
