@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/worldbug/kafeman/internal/consumer"
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 )
 
@@ -72,7 +73,7 @@ func (k *kafeman) decodeMessages(
 			// Потом это станет valueDecoder
 			value, err := decoder.Decode(message.Value)
 			if err != nil {
-				// TODO: error
+				logger.OptionalFatal(err)
 			}
 
 			message.Value = value

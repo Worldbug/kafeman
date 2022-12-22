@@ -1,5 +1,9 @@
 package serializers
 
+var SupportedSerializers = []string{
+	"raw", "protobuf", "avro", "msgpack", "base64",
+}
+
 // Hold implementations for kafeman.Decoder/kafeman.Encoder
 
 func NewRawSerializer() *RawSerializer {

@@ -6,7 +6,10 @@ import (
 
 	schemaregistry "github.com/Landoop/schema-registry"
 	"github.com/linkedin/goavro/v2"
+	"github.com/pkg/errors"
 )
+
+var ErrIsNotAvro = errors.New("Is not avro")
 
 func NewAvroSerializer(
 	avroSchemaCacheURL string,
@@ -119,7 +122,7 @@ func (c *SchemaCache) DecodeMessage(b []byte) (message []byte, err error) {
 	// Ensure avro header is present with the magic start-byte.
 	if len(b) < 5 || b[0] != 0x00 {
 		// The message does not contain Avro-encoded data
-		return b, nil
+		return b, ErrIsNotAvro
 	}
 
 	// Schema ID is stored in the 4 bytes following the magic byte.

@@ -57,7 +57,7 @@ func inTTY() bool {
 func printJson(model any) {
 	raw, err := json.Marshal(model)
 	if err != nil {
-		return
+		errorExit("%+v", err)
 	}
 
 	fmt.Fprintln(outWriter, string(raw))

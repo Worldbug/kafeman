@@ -1,11 +1,10 @@
 package producer
 
 import (
-	"fmt"
-	"os"
 	"sync"
 
 	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/logger"
 
 	"github.com/Shopify/sarama"
 )
@@ -44,7 +43,7 @@ func (p *Producer) Produce(topic string, wg *sync.WaitGroup) {
 	}
 
 	for msg := range p.input {
-		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+		partition, offset, err := producer.SendMessage(&sarama.ProducerMessage{
 			Topic: topic,
 			// Headers:   []sarama.RecordHeader{},
 			// Partition: 0,
@@ -53,10 +52,9 @@ func (p *Producer) Produce(topic string, wg *sync.WaitGroup) {
 			Value: sarama.ByteEncoder(msg.Value),
 		})
 
-		// TODO: опционально показывать куда ушло сообщение
 		if err != nil {
-			// TODO: опционально НЕ показывать ошибку
-			fmt.Fprintf(os.Stderr, "error sending message: %+v", err)
+			logger.Infof("partition: %d\toffset: %d\n", partition, offset)
+			logger.OptionalFatal(err)
 		}
 	}
 }

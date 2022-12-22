@@ -3,11 +3,10 @@ package kafeman
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"sync"
 
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/producer"
 )
 
@@ -39,7 +38,7 @@ func (k *kafeman) encodeMessages(cmd ProduceCommand, encoder Encoder, input chan
 
 		value, err := encoder.Encode(raw)
 		if err != nil {
-			// TODO: error
+			logger.OptionalFatal(err)
 		}
 
 		input <- producer.Message{
@@ -67,8 +66,6 @@ func readLines(reader io.Reader, bufferSize int, out chan []byte) {
 	close(out)
 
 	if err := scanner.Err(); err != nil {
-		// TODO: опционально ничего не писать
-		fmt.Fprintf(os.Stderr, "Can`t scan: %+v", err)
-		os.Exit(1)
+		logger.OptionalFatal(err)
 	}
 }
