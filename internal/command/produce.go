@@ -13,7 +13,7 @@ import (
 
 var (
 	keyFlag         string
-	partitionerFlag string // TODO: implement
+	partitionerFlag string
 	partitionFlag   int32
 	timestampFlag   string
 	bufferSizeFlag  int
@@ -62,10 +62,12 @@ var ProduceCMD = &cobra.Command{
 		k := kafeman.Newkafeman(conf)
 
 		command := kafeman.ProduceCommand{
-			Topic:      args[0],
-			BufferSize: bufferSizeFlag,
-			Input:      os.Stdin,
-			Output:     os.Stdout,
+			Topic:       args[0],
+			BufferSize:  bufferSizeFlag,
+			Input:       os.Stdin,
+			Output:      os.Stdout,
+			Partition:   partitionFlag,
+			Partitioner: partitionerFlag,
 		}
 
 		encoder, err := getEncoder(command)

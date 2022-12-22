@@ -73,7 +73,7 @@ func (k *kafeman) decodeMessages(
 			// Потом это станет valueDecoder
 			value, err := decoder.Decode(message.Value)
 			if err != nil {
-				logger.OptionalFatal(err)
+				logger.Fatalf("%+v\n", err)
 			}
 
 			message.Value = value

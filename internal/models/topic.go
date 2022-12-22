@@ -23,11 +23,11 @@ type TopicConsumerInfo struct {
 }
 
 type PartitionInfo struct {
-	Partition      int32   `json:"partition,omitempty"`
-	HightWatermark int64   `json:"hight_watermark,omitempty"`
-	Leader         int32   `json:"leader,omitempty"`
-	Replicas       int     `json:"replicas,omitempty"`
-	ISR            []int32 `json:"isr,omitempty"`
+	Partition      int32   `json:"partition"`
+	HightWatermark int64   `json:"hight_watermark"`
+	Leader         int32   `json:"leader"`
+	Replicas       int     `json:"replicas"`
+	ISR            []int32 `json:"isr"`
 }
 
 type TopicConfigRecord struct {

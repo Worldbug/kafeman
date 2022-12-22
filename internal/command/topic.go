@@ -105,7 +105,7 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 	fmt.Fprintf(w, "Topic:\t%s\n", topicInfo.TopicName)
 	w.Flush()
 
-	fmt.Fprintf(w, "Partition:\t%s\n", topicInfo.TopicName)
+	fmt.Fprintf(w, "Partitions:\n")
 	w.Flush()
 
 	if !noHeaderFlag {

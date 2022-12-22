@@ -2,40 +2,38 @@ package logger
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"os"
 )
 
 var (
-	errOutput    io.Writer = os.Stderr
-	stdOutput    io.Writer = os.Stdout
-	fatalOnError           = true
-	printInfo              = true
+	failTolerance = false
+	quiet         = false
 )
 
-func InitLogger(err, out io.Writer, fatal bool) {
-	errOutput = err
-	stdOutput = out
-	fatalOnError = fatal
+func InitLogger(f, q bool) {
+	failTolerance = f
+	quiet = q
 }
 
 func Infof(format string, a ...any) {
-	if !printInfo {
+	if quiet {
 		return
 	}
 
-	fmt.Fprintf(stdOutput, format, a...)
+	fmt.Fprintf(os.Stdout, format, a...)
 }
 
-func Fatal(a ...any) {
-	log.Fatal(a...)
-}
-
-func OptionalFatal(a ...any) {
-	if fatalOnError {
-		Fatal(a...)
+func Errorf(format string, a ...any) {
+	if quiet {
+		return
 	}
 
-	fmt.Fprintf(errOutput, "%+v", a...)
+	fmt.Fprintf(os.Stderr, format, a...)
+}
+
+func Fatalf(format string, a ...any) {
+	Errorf(format, a...)
+	if !failTolerance {
+		os.Exit(1)
+	}
 }

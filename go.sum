@@ -5,6 +5,8 @@ github.com/Landoop/schema-registry v0.0.0-20190327143759-50a5701c1891/go.mod h1:
 github.com/Shopify/sarama v1.37.2 h1:LoBbU0yJPte0cE5TZCGdlzZRmMgMtZU/XgnUKZg9Cv4=
 github.com/Shopify/sarama v1.37.2/go.mod h1:Nxye/E+YPru//Bpaorfhc3JsSGYwCaDDj+R4bK52U5o=
 github.com/Shopify/toxiproxy/v2 v2.5.0 h1:i4LPT+qrSlKNtQf5QliVjdP08GyAH8+BUIc9gT0eahc=
+github.com/birdayz/kaf v0.2.3 h1:/Jwnsa/ezzreNbKetjn5pv2vdx4IbnziHc8e8Rz1UI8=
+github.com/birdayz/kaf v0.2.3/go.mod h1:UZpaLxbiXLbBwKLlDQ5ls19sUCN6YE3+oHWTZSxx77Y=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/logex v1.2.1 h1:XHDu3E6q+gdHgsdTPH6ImJMIp436vR6MPtH8gP05QzM=
