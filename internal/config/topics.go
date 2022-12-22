@@ -17,11 +17,11 @@ const (
 )
 
 type Topic struct {
-	Encoding      Encoding `yaml:"encoding"`
-	ProtoType     string   `yaml:"proto_type"`
-	ProtoPaths    []string `yaml:"proto_paths"`
-	AvroSchemaURL string   `yaml:"avro_schema_url"`
-	AvroSchemaID  int      `yaml:"avro_schema_id"`
+	Encoding      Encoding `yaml:"encoding,omitempty"`
+	ProtoType     string   `yaml:"proto_type,omitempty"`
+	ProtoPaths    []string `yaml:"proto_paths,omitempty"`
+	AvroSchemaURL string   `yaml:"avro_schema_url,omitempty"`
+	AvroSchemaID  int      `yaml:"avro_schema_id,omitempty"`
 }
 
 func (t Topic) Marshall() []byte {

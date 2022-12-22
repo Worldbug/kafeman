@@ -58,7 +58,7 @@ var ConsumeCMD = &cobra.Command{
 	Use:               "consume",
 	Short:             "Consume messages from kafka topic",
 	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	PreRun:            setupProtoDescriptorRegistry,
 	Run: func(cmd *cobra.Command, args []string) {
 		offset := getOffsetFromFlag()
@@ -197,21 +197,6 @@ func parseTime(str string) time.Time {
 	}
 
 	return t.UTC()
-}
-
-func validTopicArgs(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	k := kafeman.Newkafeman(conf)
-	topics, err := k.ListTopics(cmd.Context())
-	if err != nil {
-		errorExit("%+v", err)
-	}
-
-	topicList := make([]string, 0, len(topics))
-	for _, topic := range topics {
-		topicList = append(topicList, topic.Name)
-	}
-
-	return topicList, cobra.ShellCompDirectiveNoFileComp
 }
 
 var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {

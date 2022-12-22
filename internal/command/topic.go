@@ -69,7 +69,7 @@ func newTabWriter() *tabwriter.Writer {
 var DescribeCMD = &cobra.Command{
 	Use:               "describe",
 	Short:             "Describe topic info",
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 		topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
@@ -163,7 +163,7 @@ var LsTopicsCMD = &cobra.Command{
 var TopicConsumersCMD = &cobra.Command{
 	Use:               "consumers",
 	Short:             "List topic consumers",
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 		consumers, err := k.ListTopicConsumers(cmd.Context(), args[0])
