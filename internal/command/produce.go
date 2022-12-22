@@ -13,7 +13,7 @@ import (
 
 var (
 	keyFlag         string
-	partitionerFlag string // TODO: implement
+	partitionerFlag string
 	partitionFlag   int32
 	timestampFlag   string
 	bufferSizeFlag  int
@@ -37,7 +37,7 @@ var ProduceExample = &cobra.Command{
 	Use:               "example TOPIC",
 	Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
 	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	PreRun:            setupProtoDescriptorRegistry,
 	Run: func(cmd *cobra.Command, args []string) {
 		topic := conf.Topics[args[0]]
@@ -56,16 +56,18 @@ var ProduceCMD = &cobra.Command{
 	Use:               "produce TOPIC",
 	Short:             "Produce record. Reads data from stdin.",
 	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	PreRun:            setupProtoDescriptorRegistry,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 
 		command := kafeman.ProduceCommand{
-			Topic:      args[0],
-			BufferSize: bufferSizeFlag,
-			Input:      os.Stdin,
-			Output:     os.Stdout,
+			Topic:       args[0],
+			BufferSize:  bufferSizeFlag,
+			Input:       os.Stdin,
+			Output:      os.Stdout,
+			Partition:   partitionFlag,
+			Partitioner: partitionerFlag,
 		}
 
 		encoder, err := getEncoder(command)

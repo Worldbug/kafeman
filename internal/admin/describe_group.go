@@ -44,6 +44,7 @@ func (a *Admin) DescribeGroup(ctx context.Context, group string) models.Group {
 
 				offsetsMap[gmt.Topic] = make(map[int]int64)
 				wg.Add(1)
+
 				// TODO: error handling
 				go a.asyncGetLastOffset(ctx, wg, mu, offsetsMap, gmt.Topic, gmt.Partitions...)
 

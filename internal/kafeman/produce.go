@@ -3,28 +3,34 @@ package kafeman
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"sync"
 
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/producer"
 )
 
 type ProduceCommand struct {
-	Topic      string
-	BufferSize int
-	Input      io.Reader
-	Output     io.Writer
-	Encoder    Encoder
+	Topic       string
+	Partition   int32
+	Partitioner string
+	BufferSize  int
+	Input       io.Reader
+	Output      io.Writer
+	Encoder     Encoder
 }
 
 func (k *kafeman) Produce(ctx context.Context, cmd ProduceCommand, encoder Encoder) error {
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
 
-	input := make(chan producer.Message, 1)
-	producer := producer.NewProducer(k.config, input)
+	input := make(chan producer.Message)
+	producer, err := producer.NewProducer(k.config, cmd.Partitioner, cmd.Partition, input)
+	if err != nil {
+		return err
+	}
+
+	wg.Add(1)
 	go producer.Produce(cmd.Topic, wg)
 
 	k.encodeMessages(cmd, encoder, input)
@@ -36,10 +42,9 @@ func (k *kafeman) Produce(ctx context.Context, cmd ProduceCommand, encoder Encod
 func (k *kafeman) encodeMessages(cmd ProduceCommand, encoder Encoder, input chan producer.Message) {
 	rawInput := readLinesToChan(cmd.Input, cmd.BufferSize)
 	for raw := range rawInput {
-
 		value, err := encoder.Encode(raw)
 		if err != nil {
-			// TODO: error
+			logger.Fatalf("%+v\n", err)
 		}
 
 		input <- producer.Message{
@@ -67,8 +72,6 @@ func readLines(reader io.Reader, bufferSize int, out chan []byte) {
 	close(out)
 
 	if err := scanner.Err(); err != nil {
-		// TODO: опционально ничего не писать
-		fmt.Fprintf(os.Stderr, "Can`t scan: %+v", err)
-		os.Exit(1)
+		logger.Fatalf("%+v\n", err)
 	}
 }

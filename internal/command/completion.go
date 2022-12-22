@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/serializers"
 )
 
 func init() {
@@ -83,9 +84,7 @@ func clusterCompletion(cmd *cobra.Command, args []string, toComplete string) (
 
 func encodingCompletion(cmd *cobra.Command, args []string, toComplete string) (
 	[]string, cobra.ShellCompDirective) {
-	return []string{
-		"raw", "proto", "avro", "msgpack", "base64",
-	}, cobra.ShellCompDirectiveNoFileComp
+	return serializers.SupportedSerializers, cobra.ShellCompDirectiveNoFileComp
 }
 
 func groupCompletion(cmd *cobra.Command, args []string, toComplete string) (

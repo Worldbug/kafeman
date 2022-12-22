@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/logger"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -14,12 +15,16 @@ import (
 var (
 	configPath      = ""
 	clusterOverride = ""
+	failTolerance   = false
+	quiet           = false
 )
 
 func init() {
 	RootCMD.AddCommand(ConfigCMD)
 	RootCMD.PersistentFlags().StringVar(&configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
 	RootCMD.PersistentFlags().StringVarP(&clusterOverride, "cluster", "c", "", "set a temporary current cluster")
+	RootCMD.PersistentFlags().BoolVar(&failTolerance, "tolerance", false, "don't crash on errors")
+	RootCMD.PersistentFlags().BoolVar(&quiet, "quiet", false, "do not print info and errors")
 	RootCMD.RegisterFlagCompletionFunc("cluster", clusterCompletion)
 	// ConfigCMD.AddCommand(configImportCmd)
 	// ConfigCMD.AddCommand(configUseCmd)
@@ -36,6 +41,8 @@ func init() {
 }
 
 func onInit() {
+	logger.InitLogger(failTolerance, quiet)
+
 	var err error
 	conf, err = config.LoadConfig("")
 	if err != nil {

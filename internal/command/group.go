@@ -19,13 +19,15 @@ var (
 	printAllFlag      bool
 	allPartitionsFlag bool
 	noConfirmFlag     bool
-	partitionFag      int
 	topicFlag         string
 )
 
 func init() {
 	RootCMD.AddCommand(GroupCMD)
 	RootCMD.AddCommand(GroupsCMD)
+
+	GroupLsCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+	GroupsCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 
 	GroupCMD.AddCommand(GroupsCMD)
 	GroupCMD.AddCommand(GroupLsCMD)
@@ -37,7 +39,7 @@ func init() {
 	GroupDescribeCMD.Flags().BoolVar(&printAllFlag, "full", false, "Print completed info")
 	GroupCommitCMD.Flags().BoolVar(&fromJsonFlag, "json", false, "Parse json from std and set values")
 	GroupCommitCMD.Flags().BoolVar(&allPartitionsFlag, "all-partitions", false, "apply to all partitions")
-	GroupCommitCMD.Flags().IntVar(&partitionFag, "p", 0, "partition")
+	GroupCommitCMD.Flags().Int32Var(&partitionFlag, "p", 0, "partition")
 	GroupCommitCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
 	GroupCommitCMD.RegisterFlagCompletionFunc("offset", offsetCompletion)
 	GroupCommitCMD.Flags().StringVarP(&topicFlag, "topic", "t", "", "topic to set offset")
@@ -90,27 +92,33 @@ var GroupLsCMD = &cobra.Command{
 			errorExit("%+v", err)
 		}
 
-		sort.Slice(groupList, func(i int, j int) bool {
-			return groupList[i] < groupList[j]
-		})
-
-		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
-
-		if !noHeaderFlag {
-			fmt.Fprintf(w, "NAME\tSTATE\tCONSUMERS\t\n")
-		}
-
 		groupDescs, err := k.DescribeGroups(cmd.Context(), groupList)
 		if err != nil {
 			errorExit("Unable to describe consumer groups: %v\n", err)
 		}
 
-		for _, detail := range groupDescs {
-			fmt.Fprintf(w, "%v\t%v\t%v\t\n", detail.Name, detail.State, detail.Consumers)
+		if asJsonFlag {
+			printJson(groupDescs)
+			return
 		}
 
-		w.Flush()
+		groupListPrint(groupDescs)
+
 	},
+}
+
+func groupListPrint(groupDescs []kafeman.GroupInfo) {
+	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "NAME\tSTATE\tCONSUMERS\t\n")
+	}
+
+	for _, detail := range groupDescs {
+		fmt.Fprintf(w, "%v\t%v\t%v\t\n", detail.Name, detail.State, detail.Consumers)
+	}
+
+	w.Flush()
 }
 
 var GroupDescribeCMD = &cobra.Command{
@@ -127,10 +135,11 @@ var GroupDescribeCMD = &cobra.Command{
 			return
 		}
 
-		textGroupDescribe(group)
+		groupDescribePrint(group)
 
 	}}
 
+// TODO: переписать
 var GroupCommitCMD = &cobra.Command{
 	Use:   "commit",
 	Short: "Set offset for given consumer group",
@@ -183,7 +192,7 @@ func jsonGroupDescribe(group models.Group) {
 	fmt.Fprintln(outWriter, string(output))
 }
 
-func textGroupDescribe(group models.Group) {
+func groupDescribePrint(group models.Group) {
 	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
 	defer w.Flush()
 

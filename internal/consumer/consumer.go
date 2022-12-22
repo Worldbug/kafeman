@@ -172,16 +172,14 @@ func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, er
 		return nil, err
 	}
 
-	partitions := c.partitions
-
-	if len(partitions) == 0 {
-		partitions, err = cli.Partitions(topic)
+	if len(c.partitions) == 0 {
+		c.partitions, err = cli.Partitions(topic)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	c.messages = make(chan models.Message, len(partitions))
+	c.messages = make(chan models.Message, len(c.partitions))
 	go cg.Consume(ctx, []string{topic}, c)
 
 	return c.messages, nil
@@ -197,7 +195,6 @@ func (c *Consumer) Cleanup(_ sarama.ConsumerGroupSession) error {
 }
 
 func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	// TODO: Бага. Для консьюминга с cg у нас счетчик работает на все сообщения а не на сообщения в партиции
 	left := c.messagesLimit
 
 	for {
@@ -230,5 +227,4 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 		}
 	}
-
 }

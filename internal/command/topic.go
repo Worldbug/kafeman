@@ -33,6 +33,9 @@ func init() {
 	RootCMD.AddCommand(TopicCMD)
 	RootCMD.AddCommand(TopicsCMD)
 
+	TopicCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+	TopicsCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+
 	TopicCMD.AddCommand(DescribeCMD)
 	TopicCMD.AddCommand(TopicConsumersCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
@@ -69,7 +72,7 @@ func newTabWriter() *tabwriter.Writer {
 var DescribeCMD = &cobra.Command{
 	Use:               "describe",
 	Short:             "Describe topic info",
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 		topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
@@ -102,7 +105,7 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 	fmt.Fprintf(w, "Topic:\t%s\n", topicInfo.TopicName)
 	w.Flush()
 
-	fmt.Fprintf(w, "Partition:\t%s\n", topicInfo.TopicName)
+	fmt.Fprintf(w, "Partitions:\n")
 	w.Flush()
 
 	if !noHeaderFlag {
@@ -142,28 +145,37 @@ var LsTopicsCMD = &cobra.Command{
 	Args:    cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
-		w := newTabWriter()
-
-		if !noHeaderFlag {
-			fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
-		}
-
 		topics, err := k.ListTopics(cmd.Context())
 		if err != nil {
 			errorExit("%+v", err)
 		}
 
-		for _, topic := range topics {
-			fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
+		if asJsonFlag {
+			printJson(topics)
+			return
 		}
-		w.Flush()
+
+		lsTopicsPrint(topics)
 	},
+}
+
+func lsTopicsPrint(topics []models.Topic) {
+	w := newTabWriter()
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
+	}
+
+	for _, topic := range topics {
+		fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
+	}
+	w.Flush()
 }
 
 var TopicConsumersCMD = &cobra.Command{
 	Use:               "consumers",
 	Short:             "List topic consumers",
-	ValidArgsFunction: validTopicArgs,
+	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 		consumers, err := k.ListTopicConsumers(cmd.Context(), args[0])

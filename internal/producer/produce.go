@@ -1,11 +1,12 @@
 package producer
 
 import (
-	"fmt"
-	"os"
 	"sync"
 
 	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/logger"
+
+	prt "github.com/birdayz/kaf/pkg/partitioner"
 
 	"github.com/Shopify/sarama"
 )
@@ -17,54 +18,89 @@ type Message struct {
 
 func NewProducer(
 	config config.Config,
+	partitioner string,
+	partition int32,
 	input <-chan Message,
-) *Producer {
-	return &Producer{
-		config: config,
-		input:  input,
+) (*Producer, error) {
+	addrs := config.GetCurrentCluster().Brokers
+
+	producer, err := sarama.NewSyncProducer(addrs, getSaramaConfig(
+		config, partitioner, partition))
+	if err != nil {
+		return &Producer{}, nil
 	}
+
+	return &Producer{
+		config:      config,
+		input:       input,
+		producer:    producer,
+		partitioner: partitioner,
+		partition:   partition,
+	}, nil
 }
 
 type Producer struct {
-	config config.Config
-	input  <-chan Message
-}
+	config   config.Config
+	input    <-chan Message
+	producer sarama.SyncProducer
 
-// TODO: new sarama from conf
+	partitioner string
+	partition   int32
+}
 
 func (p *Producer) Produce(topic string, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 
-	addrs := p.config.GetCurrentCluster().Brokers
-
-	producer, err := sarama.NewSyncProducer(addrs, p.getSaramaConfig())
-	if err != nil {
-		return
-	}
-
 	for msg := range p.input {
-		_, _, err := producer.SendMessage(&sarama.ProducerMessage{
+		msg := &sarama.ProducerMessage{
 			Topic: topic,
-			// Headers:   []sarama.RecordHeader{},
-			// Partition: 0,
-			// Timestamp: time.Now(),
 			Key:   sarama.ByteEncoder(msg.Key),
 			Value: sarama.ByteEncoder(msg.Value),
-		})
-
-		// TODO: опционально показывать куда ушло сообщение
-		if err != nil {
-			// TODO: опционально НЕ показывать ошибку
-			fmt.Fprintf(os.Stderr, "error sending message: %+v", err)
+			// TODO:
+			// Headers:   []sarama.RecordHeader{},
+			// Timestamp: time.Now(),
 		}
+
+		if p.partition != -1 {
+			msg.Partition = p.partition
+		}
+
+		partition, offset, err := p.producer.SendMessage(msg)
+		if err != nil {
+			logger.Fatalf("%+v\n", err)
+			continue
+		}
+
+		logger.Infof("partition: %d\toffset: %d\n", partition, offset)
 	}
 }
 
-func (p *Producer) getSaramaConfig() *sarama.Config {
+func getSaramaConfig(
+	conf config.Config,
+	partitioner string,
+	partition int32,
+) *sarama.Config {
+
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Version = sarama.V1_1_0_0
 	saramaConfig.Producer.Return.Successes = true
+
+	switch partitioner {
+	case "jvm":
+		saramaConfig.Producer.Partitioner = prt.NewJVMCompatiblePartitioner
+	case "rand":
+		saramaConfig.Producer.Partitioner = sarama.NewRandomPartitioner
+	case "rr":
+		saramaConfig.Producer.Partitioner = sarama.NewRoundRobinPartitioner
+	case "hash":
+		saramaConfig.Producer.Partitioner = sarama.NewHashPartitioner
+	default:
+		saramaConfig.Producer.Partitioner = sarama.NewHashPartitioner
+	}
+
+	if partition != -1 {
+		saramaConfig.Producer.Partitioner = sarama.NewManualPartitioner
+	}
 
 	return saramaConfig
 }
