@@ -27,6 +27,9 @@ func init() {
 	RootCMD.AddCommand(GroupCMD)
 	RootCMD.AddCommand(GroupsCMD)
 
+	GroupLsCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+	GroupsCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+
 	GroupCMD.AddCommand(GroupsCMD)
 	GroupCMD.AddCommand(GroupLsCMD)
 	GroupCMD.AddCommand(GroupDescribeCMD)
@@ -90,27 +93,33 @@ var GroupLsCMD = &cobra.Command{
 			errorExit("%+v", err)
 		}
 
-		sort.Slice(groupList, func(i int, j int) bool {
-			return groupList[i] < groupList[j]
-		})
-
-		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
-
-		if !noHeaderFlag {
-			fmt.Fprintf(w, "NAME\tSTATE\tCONSUMERS\t\n")
-		}
-
 		groupDescs, err := k.DescribeGroups(cmd.Context(), groupList)
 		if err != nil {
 			errorExit("Unable to describe consumer groups: %v\n", err)
 		}
 
-		for _, detail := range groupDescs {
-			fmt.Fprintf(w, "%v\t%v\t%v\t\n", detail.Name, detail.State, detail.Consumers)
+		if asJsonFlag {
+			printJson(groupDescs)
+			return
 		}
 
-		w.Flush()
+		groupListPrint(groupDescs)
+
 	},
+}
+
+func groupListPrint(groupDescs []kafeman.GroupInfo) {
+	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "NAME\tSTATE\tCONSUMERS\t\n")
+	}
+
+	for _, detail := range groupDescs {
+		fmt.Fprintf(w, "%v\t%v\t%v\t\n", detail.Name, detail.State, detail.Consumers)
+	}
+
+	w.Flush()
 }
 
 var GroupDescribeCMD = &cobra.Command{

@@ -73,7 +73,7 @@ var ConsumeCMD = &cobra.Command{
 			Offset:         offset,
 			CommitMessages: commitFlag,
 			Follow:         followFlag,
-			WithMeta:       printMetaFlag, // TODO: remove
+			WithMeta:       printMetaFlag,
 			MessagesCount:  messagesCountFlag,
 			FromTime:       parseTime(fromAtFlag),
 		}
