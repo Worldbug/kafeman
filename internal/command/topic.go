@@ -33,6 +33,9 @@ func init() {
 	RootCMD.AddCommand(TopicCMD)
 	RootCMD.AddCommand(TopicsCMD)
 
+	TopicCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+	TopicsCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
+
 	TopicCMD.AddCommand(DescribeCMD)
 	TopicCMD.AddCommand(TopicConsumersCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
@@ -142,22 +145,31 @@ var LsTopicsCMD = &cobra.Command{
 	Args:    cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
-		w := newTabWriter()
-
-		if !noHeaderFlag {
-			fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
-		}
-
 		topics, err := k.ListTopics(cmd.Context())
 		if err != nil {
 			errorExit("%+v", err)
 		}
 
-		for _, topic := range topics {
-			fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
+		if asJsonFlag {
+			printJson(topics)
+			return
 		}
-		w.Flush()
+
+		lsTopicsPrint(topics)
 	},
+}
+
+func lsTopicsPrint(topics []models.Topic) {
+	w := newTabWriter()
+
+	if !noHeaderFlag {
+		fmt.Fprintf(w, "NAME\tPARTITIONS\tREPLICAS\t\n")
+	}
+
+	for _, topic := range topics {
+		fmt.Fprintf(w, "%v\t%v\t%v\t\n", topic.Name, topic.Partitions, topic.Replicas)
+	}
+	w.Flush()
 }
 
 var TopicConsumersCMD = &cobra.Command{

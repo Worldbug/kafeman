@@ -136,10 +136,11 @@ var GroupDescribeCMD = &cobra.Command{
 			return
 		}
 
-		textGroupDescribe(group)
+		groupDescribePrint(group)
 
 	}}
 
+// TODO: переписать
 var GroupCommitCMD = &cobra.Command{
 	Use:   "commit",
 	Short: "Set offset for given consumer group",
@@ -192,7 +193,7 @@ func jsonGroupDescribe(group models.Group) {
 	fmt.Fprintln(outWriter, string(output))
 }
 
-func textGroupDescribe(group models.Group) {
+func groupDescribePrint(group models.Group) {
 	w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
 	defer w.Flush()
 
