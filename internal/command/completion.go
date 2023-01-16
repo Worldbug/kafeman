@@ -1,6 +1,7 @@
 package command
 
 import (
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -128,4 +129,31 @@ func topicCompletion(cmd *cobra.Command, args []string, toComplete string) (
 	}
 
 	return topicsSuggest, cobra.ShellCompDirectiveNoFileComp
+}
+
+// TODO: refactor
+func replicationCompletion(cmd *cobra.Command, args []string, toComplete string) (
+	[]string, cobra.ShellCompDirective) {
+	suggest := make([]string, 0)
+
+	commands := strings.Split(toComplete, "/")
+	if len(commands) == 1 {
+		for _, cluster := range conf.Clusters {
+			suggest = append(suggest, cluster.Name+"/")
+		}
+
+		return suggest, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	conf.CurrentCluster = strings.TrimRight(toComplete, "/")
+	topics, err := kafeman.Newkafeman(conf).ListTopics(cmd.Context())
+	if err != nil {
+		return suggest, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	for _, topic := range topics {
+		suggest = append(suggest, toComplete+topic.Name)
+	}
+
+	return suggest, cobra.ShellCompDirectiveNoFileComp
 }
