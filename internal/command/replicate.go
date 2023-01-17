@@ -26,8 +26,9 @@ func init() {
 
 // kafeman replicate prod/events local/events
 var replicateCMD = &cobra.Command{
-	Use:               "replicate",
+	Use:               "replicate [source] [dest]",
 	Short:             "Replicate messages from source topic to destination topic",
+	Long:              "replicate prod/topic local/topic",
 	Args:              cobra.ExactArgs(2),
 	ValidArgsFunction: replicationCompletion,
 	PreRun:            setupProtoDescriptorRegistry,
