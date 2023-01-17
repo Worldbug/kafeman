@@ -3,7 +3,9 @@ before:
     - go mod tidy
     - go generate ./...
 builds:
-  - env:
+  - id: "main"
+    main: "cmd/kafeman"
+    env:
       - CGO_ENABLED=0
     goarch:
       - amd64
