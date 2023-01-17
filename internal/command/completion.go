@@ -152,6 +152,8 @@ func replicationCompletion(cmd *cobra.Command, args []string, toComplete string)
 	}
 
 	for _, topic := range topics {
+		// TODO: если строка частично дописана
+		// то не дополняет
 		suggest = append(suggest, toComplete+topic.Name)
 	}
 
