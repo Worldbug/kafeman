@@ -1,0 +1,42 @@
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+      - windows
+      - darwin
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+#brews:
+#  - name: kafeman
+#    goarm: 6
+#    tap:
+#      owner: worldbug
+#      name: homebrew-kafeman
+#      branch: main
+#      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+#    commit_author:
+#      name: Kirill Tikhomirov
+#      email: none@gmail.com
