@@ -1,6 +1,6 @@
 module github.com/worldbug/kafeman
 
-go 1.19
+go 1.18
 
 require (
 	github.com/Landoop/schema-registry v0.0.0-20190327143759-50a5701c1891
