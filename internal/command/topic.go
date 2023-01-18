@@ -3,9 +3,11 @@ package command
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"text/tabwriter"
 
+	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
 
@@ -38,9 +40,9 @@ func init() {
 
 	TopicCMD.AddCommand(DescribeCMD)
 	TopicCMD.AddCommand(TopicConsumersCMD)
+	TopicCMD.AddCommand(deleteTopicCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	// TopicCMD.AddCommand(createTopicCmd)
-	// TopicCMD.AddCommand(deleteTopicCmd)
 	TopicCMD.AddCommand(LsTopicsCMD)
 	// TopicCMD.AddCommand(describeTopicCmd)
 	// TopicCMD.AddCommand(addConfigCmd)
@@ -204,4 +206,22 @@ func topicConsumersPrint(consumers models.TopicConsumers) {
 	for _, c := range consumers.Consumers {
 		fmt.Fprintf(w, "\t%s\t%d\n", c.Name, c.MembersCount)
 	}
+}
+
+var deleteTopicCMD = &cobra.Command{
+	Use:               "delete TOPIC",
+	Short:             "Delete a topic",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: topicCompletion,
+	Run: func(cmd *cobra.Command, args []string) {
+		topic := args[0]
+
+		adm := admin.NewAdmin(conf)
+		err := adm.DeleteTopic(cmd.Context(), topic)
+		if err != nil {
+			os.Exit(1)
+		} else {
+			fmt.Fprintf(outWriter, "\xE2\x9C\x85 Deleted topic %v!\n", topic)
+		}
+	},
 }
