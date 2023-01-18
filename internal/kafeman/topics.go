@@ -95,3 +95,28 @@ func (k *kafeman) UpdateTopic(ctx context.Context, command UpdateTopicCommand) e
 
 	return err
 }
+
+type CreateTopicCommand struct {
+	TopicName         string
+	PartitionsCount   int32
+	ReplicationFactor int16
+	CleanupPolicy     string
+}
+
+func (k *kafeman) CreateTopic(ctx context.Context, command CreateTopicCommand) error {
+	adm := admin.NewAdmin(k.config)
+	err := adm.CreateTopic(ctx,
+		command.TopicName,
+		command.PartitionsCount,
+		command.ReplicationFactor,
+		command.CleanupPolicy,
+	)
+	if err != nil {
+		logger.Errorf("Create topic  %+v]\nPartitions: %+v\nReplication Factor: %+v\nCleanupPolicy: %+v  err: %+v",
+			command.TopicName, command.PartitionsCount,
+			command.ReplicationFactor, command.CleanupPolicy, err)
+
+	}
+
+	return err
+}

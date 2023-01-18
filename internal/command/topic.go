@@ -44,14 +44,14 @@ func init() {
 	TopicCMD.AddCommand(deleteTopicCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	TopicCMD.AddCommand(LsTopicsCMD)
-	// TopicCMD.AddCommand(createTopicCmd)
+	TopicCMD.AddCommand(createTopicCmd)
 	// TopicCMD.AddCommand(addConfigCmd)
 	TopicCMD.AddCommand(topicSetConfig)
 	TopicCMD.AddCommand(updateTopicCmd)
 
-	// createTopicCmd.Flags().Int32VarP(&partitionsFlag, "partitions", "p", int32(1), "Number of partitions")
-	// createTopicCmd.Flags().Int16VarP(&replicasFlag, "replicas", "r", int16(1), "Number of replicas")
-	// createTopicCmd.Flags().BoolVar(&compactFlag, "compact", false, "Enable topic compaction")
+	createTopicCmd.Flags().Int32VarP(&partitionFlag, "partitions", "p", int32(1), "Number of partitions")
+	createTopicCmd.Flags().Int16VarP(&replicasFlag, "replicas", "r", int16(1), "Number of replicas")
+	createTopicCmd.Flags().BoolVar(&compactFlag, "compact", false, "Enable topic compaction")
 
 	LsTopicsCMD.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
 	TopicsCMD.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
@@ -300,5 +300,39 @@ var updateTopicCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\xE2\x9C\x85 Updated topic!\n")
+	},
+}
+
+var createTopicCmd = &cobra.Command{
+	Use:     "create TOPIC",
+	Short:   "Create a topic",
+	Example: "kafeman topic create topic_name --partitions 6",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+		topic := args[0]
+
+		cleanupPolicy := "delete"
+		if compactFlag {
+			cleanupPolicy = "compact"
+		}
+
+		err := k.CreateTopic(cmd.Context(), kafeman.CreateTopicCommand{
+			TopicName:         topic,
+			PartitionsCount:   partitionFlag,
+			ReplicationFactor: replicasFlag,
+			CleanupPolicy:     cleanupPolicy,
+		})
+		if err != nil {
+			errorExit("Could not create topic %v: %v\n", topic, err.Error())
+		}
+
+		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+		fmt.Fprintf(w, "\xE2\x9C\x85 Created topic!\n")
+		fmt.Fprintln(w, "\tTopic Name:\t", topic)
+		fmt.Fprintln(w, "\tPartitions:\t", partitionsFlag)
+		fmt.Fprintln(w, "\tReplication Factor:\t", replicasFlag)
+		fmt.Fprintln(w, "\tCleanup Policy:\t", cleanupPolicy)
+		w.Flush()
 	},
 }

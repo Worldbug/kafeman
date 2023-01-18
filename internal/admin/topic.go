@@ -35,3 +35,19 @@ func (a *Admin) UpdateTopic(ctx context.Context, topic string, partitionsCount i
 
 	return adm.AlterPartitionReassignments(topic, assignments)
 }
+
+func (a *Admin) CreateTopic(ctx context.Context,
+	topicName string,
+	partitionsCount int32,
+	replicationFactor int16,
+	cleanupPolicy string,
+) error {
+	adm := a.getSaramaAdmin()
+	return adm.CreateTopic(topicName, &sarama.TopicDetail{
+		NumPartitions:     partitionsCount,
+		ReplicationFactor: replicationFactor,
+		ConfigEntries: map[string]*string{
+			"cleanup.policy": &cleanupPolicy,
+		},
+	}, false)
+}
