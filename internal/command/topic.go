@@ -45,7 +45,7 @@ func init() {
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
 	TopicCMD.AddCommand(LsTopicsCMD)
 	TopicCMD.AddCommand(createTopicCmd)
-	// TopicCMD.AddCommand(addConfigCmd)
+	TopicCMD.AddCommand(addConfigCmd)
 	TopicCMD.AddCommand(topicSetConfig)
 	TopicCMD.AddCommand(updateTopicCmd)
 
@@ -334,5 +334,31 @@ var createTopicCmd = &cobra.Command{
 		fmt.Fprintln(w, "\tReplication Factor:\t", replicasFlag)
 		fmt.Fprintln(w, "\tCleanup Policy:\t", cleanupPolicy)
 		w.Flush()
+	},
+}
+
+var addConfigCmd = &cobra.Command{
+	Use:               "add-config TOPIC KEY VALUE",
+	Short:             "Add config key/value pair to topic",
+	Example:           "kafeman topic add-config topic_name compression.type gzip",
+	ValidArgsFunction: topicCompletion,
+	Args:              cobra.ExactArgs(3),
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+
+		topic := args[0]
+		key := args[1]
+		value := args[2]
+
+		err := k.AddConfigRecord(cmd.Context(), kafeman.AddConfigRecordCommand{
+			Topic: topic,
+			Key:   key,
+			Value: value,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Printf("Added config %v=%v to topic %v.\n", key, value, topic)
 	},
 }

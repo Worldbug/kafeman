@@ -51,3 +51,11 @@ func (a *Admin) CreateTopic(ctx context.Context,
 		},
 	}, false)
 }
+
+func (a *Admin) AddConfig(ctx context.Context, topic, key, value string) error {
+	adm := a.getSaramaAdmin()
+
+	return adm.AlterConfig(sarama.TopicResource, topic, map[string]*string{
+		key: &value,
+	}, false)
+}

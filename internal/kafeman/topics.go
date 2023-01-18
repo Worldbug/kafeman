@@ -112,10 +112,27 @@ func (k *kafeman) CreateTopic(ctx context.Context, command CreateTopicCommand) e
 		command.CleanupPolicy,
 	)
 	if err != nil {
-		logger.Errorf("Create topic  %+v]\nPartitions: %+v\nReplication Factor: %+v\nCleanupPolicy: %+v  err: %+v",
+		logger.Errorf("Create topic  [%+v]\nPartitions: %+v\nReplication Factor: %+v\nCleanupPolicy: %+v  err: %+v",
 			command.TopicName, command.PartitionsCount,
 			command.ReplicationFactor, command.CleanupPolicy, err)
 
+	}
+
+	return err
+}
+
+type AddConfigRecordCommand struct {
+	Topic, Key, Value string
+}
+
+func (k *kafeman) AddConfigRecord(ctx context.Context, command AddConfigRecordCommand) error {
+	adm := admin.NewAdmin(k.config)
+
+	err := adm.AddConfig(ctx, command.Topic, command.Key, command.Value)
+	if err != nil {
+		logger.Errorf("Add config record for topi [%+v] %+v=%+v err: %+v",
+			command.Topic, command.Key, command.Value, err,
+		)
 	}
 
 	return err
