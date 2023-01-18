@@ -28,7 +28,7 @@ func init() {
 var replicateCMD = &cobra.Command{
 	Use:               "replicate [source] [dest]",
 	Short:             "Replicate messages from source topic to destination topic",
-	Long:              "replicate prod/topic local/topic",
+	Example:           "kafeman replicate prod_cluster/topic_name local_cluster/topic_name",
 	Args:              cobra.ExactArgs(2),
 	ValidArgsFunction: replicationCompletion,
 	PreRun:            setupProtoDescriptorRegistry,

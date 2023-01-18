@@ -3,10 +3,13 @@ package command
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/spf13/cobra"
@@ -38,23 +41,22 @@ func init() {
 
 	TopicCMD.AddCommand(DescribeCMD)
 	TopicCMD.AddCommand(TopicConsumersCMD)
+	TopicCMD.AddCommand(deleteTopicCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
-	// TopicCMD.AddCommand(createTopicCmd)
-	// TopicCMD.AddCommand(deleteTopicCmd)
 	TopicCMD.AddCommand(LsTopicsCMD)
-	// TopicCMD.AddCommand(describeTopicCmd)
-	// TopicCMD.AddCommand(addConfigCmd)
-	// TopicCMD.AddCommand(topicSetConfig)
-	// TopicCMD.AddCommand(updateTopicCmd)
+	TopicCMD.AddCommand(createTopicCmd)
+	TopicCMD.AddCommand(addConfigCmd)
+	TopicCMD.AddCommand(topicSetConfig)
+	TopicCMD.AddCommand(updateTopicCmd)
 
-	// createTopicCmd.Flags().Int32VarP(&partitionsFlag, "partitions", "p", int32(1), "Number of partitions")
-	// createTopicCmd.Flags().Int16VarP(&replicasFlag, "replicas", "r", int16(1), "Number of replicas")
-	// createTopicCmd.Flags().BoolVar(&compactFlag, "compact", false, "Enable topic compaction")
+	createTopicCmd.Flags().Int32VarP(&partitionFlag, "partitions", "p", int32(1), "Number of partitions")
+	createTopicCmd.Flags().Int16VarP(&replicasFlag, "replicas", "r", int16(1), "Number of replicas")
+	createTopicCmd.Flags().BoolVar(&compactFlag, "compact", false, "Enable topic compaction")
 
 	LsTopicsCMD.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
-	// topicsCmd.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
-	// updateTopicCmd.Flags().Int32VarP(&partitionsFlag, "partitions", "p", int32(-1), "Number of partitions")
-	// updateTopicCmd.Flags().StringVar(&partitionAssignmentsFlag, "partition-assignments", "", "Partition Assignments. Optional. If set in combination with -p, an assignment must be provided for each new partition. Example: '[[1,2,3],[1,2,3]]' (JSON Array syntax) assigns two new partitions to brokers 1,2,3. If used by itself, a reassignment must be provided for all partitions.")
+	TopicsCMD.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
+	updateTopicCmd.Flags().Int32VarP(&partitionFlag, "partitions", "p", int32(-1), "Number of partitions")
+	updateTopicCmd.Flags().StringVar(&partitionAssignmentsFlag, "partition-assignments", "", "Partition Assignments. Optional. If set in combination with -p, an assignment must be provided for each new partition. Example: '[[1,2,3],[1,2,3]]' (JSON Array syntax) assigns two new partitions to brokers 1,2,3. If used by itself, a reassignment must be provided for all partitions.")
 }
 
 var TopicCMD = &cobra.Command{
@@ -175,6 +177,8 @@ func lsTopicsPrint(topics []models.Topic) {
 var TopicConsumersCMD = &cobra.Command{
 	Use:               "consumers",
 	Short:             "List topic consumers",
+	Args:              cobra.ExactArgs(1),
+	Example:           "kafeman topic consumers topic_name",
 	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
@@ -204,4 +208,157 @@ func topicConsumersPrint(consumers models.TopicConsumers) {
 	for _, c := range consumers.Consumers {
 		fmt.Fprintf(w, "\t%s\t%d\n", c.Name, c.MembersCount)
 	}
+}
+
+var deleteTopicCMD = &cobra.Command{
+	Use:               "delete TOPIC",
+	Short:             "Delete a topic",
+	Args:              cobra.ExactArgs(1),
+	Example:           "kafeman topic delete topic_name",
+	ValidArgsFunction: topicCompletion,
+	Run: func(cmd *cobra.Command, args []string) {
+		topic := args[0]
+
+		k := kafeman.Newkafeman(conf)
+		err := k.DeleteTopic(cmd.Context(), topic)
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Fprintf(outWriter, "\xE2\x9C\x85 Deleted topic %v!\n", topic)
+	},
+}
+
+var topicSetConfig = &cobra.Command{
+	Use:               "set-config",
+	Short:             "set topic config. requires Kafka >=2.3.0 on broker side and kafeman cluster config.",
+	Example:           "kafeman topic set-config topic.name cleanup.policy=delete",
+	Args:              cobra.ExactArgs(2),
+	ValidArgsFunction: topicCompletion,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+
+		topic := args[0]
+
+		splt := strings.Split(args[1], ",")
+		configs := make(map[string]string)
+
+		for _, kv := range splt {
+			s := strings.Split(kv, "=")
+
+			if len(s) != 2 {
+				continue
+			}
+
+			configs[s[0]] = s[1]
+		}
+
+		if len(configs) < 1 {
+			logger.Errorf("No valid configs found")
+		}
+
+		err := k.SetConfigValueTopic(cmd.Context(), kafeman.SetConfigValueTopicCommand{
+			Topic:  topic,
+			Values: configs,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Printf("\xE2\x9C\x85 Updated config.")
+	},
+}
+
+var updateTopicCmd = &cobra.Command{
+	Use:               "update",
+	Short:             "Update topic",
+	Example:           "kafeman topic update topic_name -p 5 --partition-assignments '[[1,2,3],[1,2,3]]'",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: topicCompletion,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+		topic := args[0]
+
+		if partitionFlag == -1 && partitionAssignmentsFlag == "" {
+			errorExit("Number of partitions and/or partition assignments must be given")
+		}
+
+		var assignments [][]int32
+		if partitionAssignmentsFlag != "" {
+			if err := json.Unmarshal([]byte(partitionAssignmentsFlag), &assignments); err != nil {
+				errorExit("Invalid partition assignments: %v", err)
+			}
+		}
+
+		err := k.UpdateTopic(cmd.Context(), kafeman.UpdateTopicCommand{
+			Topic:           topic,
+			PartitionsCount: partitionFlag,
+			Assignments:     assignments,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Printf("\xE2\x9C\x85 Updated topic!\n")
+	},
+}
+
+var createTopicCmd = &cobra.Command{
+	Use:     "create TOPIC",
+	Short:   "Create a topic",
+	Example: "kafeman topic create topic_name --partitions 6",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+		topic := args[0]
+
+		cleanupPolicy := "delete"
+		if compactFlag {
+			cleanupPolicy = "compact"
+		}
+
+		err := k.CreateTopic(cmd.Context(), kafeman.CreateTopicCommand{
+			TopicName:         topic,
+			PartitionsCount:   partitionFlag,
+			ReplicationFactor: replicasFlag,
+			CleanupPolicy:     cleanupPolicy,
+		})
+		if err != nil {
+			errorExit("Could not create topic %v: %v\n", topic, err.Error())
+		}
+
+		w := tabwriter.NewWriter(outWriter, tabwriterMinWidth, tabwriterWidth, tabwriterPadding, tabwriterPadChar, tabwriterFlags)
+		fmt.Fprintf(w, "\xE2\x9C\x85 Created topic!\n")
+		fmt.Fprintln(w, "\tTopic Name:\t", topic)
+		fmt.Fprintln(w, "\tPartitions:\t", partitionsFlag)
+		fmt.Fprintln(w, "\tReplication Factor:\t", replicasFlag)
+		fmt.Fprintln(w, "\tCleanup Policy:\t", cleanupPolicy)
+		w.Flush()
+	},
+}
+
+var addConfigCmd = &cobra.Command{
+	Use:               "add-config TOPIC KEY VALUE",
+	Short:             "Add config key/value pair to topic",
+	Example:           "kafeman topic add-config topic_name compression.type gzip",
+	ValidArgsFunction: topicCompletion,
+	Args:              cobra.ExactArgs(3),
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+
+		topic := args[0]
+		key := args[1]
+		value := args[2]
+
+		err := k.AddConfigRecord(cmd.Context(), kafeman.AddConfigRecordCommand{
+			Topic: topic,
+			Key:   key,
+			Value: value,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Printf("Added config %v=%v to topic %v.\n", key, value, topic)
+	},
 }

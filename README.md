@@ -115,7 +115,7 @@ topics:
 ### group
 |kafeman|kaf|
 |:---:|:---:|
-❌| commit
+✔️| commit
 ✅| delete
 ✅| describe
 ✅| ls
@@ -126,6 +126,6 @@ topics:
 |:---:|:---:|
 ✅| describe
 ✅| ls
-❌| create
-❌| delete
-❌| update
+✅| create
+✅| delete
+✅| update
