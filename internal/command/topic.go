@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"text/tabwriter"
 
-	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/spf13/cobra"
@@ -42,11 +43,10 @@ func init() {
 	TopicCMD.AddCommand(TopicConsumersCMD)
 	TopicCMD.AddCommand(deleteTopicCMD)
 	DescribeCMD.Flags().BoolVar(&asJsonFlag, "json", false, "Print data as json")
-	// TopicCMD.AddCommand(createTopicCmd)
 	TopicCMD.AddCommand(LsTopicsCMD)
-	// TopicCMD.AddCommand(describeTopicCmd)
+	// TopicCMD.AddCommand(createTopicCmd)
 	// TopicCMD.AddCommand(addConfigCmd)
-	// TopicCMD.AddCommand(topicSetConfig)
+	TopicCMD.AddCommand(topicSetConfig)
 	// TopicCMD.AddCommand(updateTopicCmd)
 
 	// createTopicCmd.Flags().Int32VarP(&partitionsFlag, "partitions", "p", int32(1), "Number of partitions")
@@ -216,12 +216,52 @@ var deleteTopicCMD = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		topic := args[0]
 
-		adm := admin.NewAdmin(conf)
-		err := adm.DeleteTopic(cmd.Context(), topic)
+		k := kafeman.Newkafeman(conf)
+		err := k.DeleteTopic(cmd.Context(), topic)
 		if err != nil {
 			os.Exit(1)
-		} else {
-			fmt.Fprintf(outWriter, "\xE2\x9C\x85 Deleted topic %v!\n", topic)
 		}
+
+		fmt.Fprintf(outWriter, "\xE2\x9C\x85 Deleted topic %v!\n", topic)
+	},
+}
+
+var topicSetConfig = &cobra.Command{
+	Use:               "set-config",
+	Short:             "set topic config. requires Kafka >=2.3.0 on broker side and kaf cluster config.",
+	Example:           "kaf topic set-config topic.name cleanup.policy=delete",
+	Args:              cobra.ExactArgs(2),
+	ValidArgsFunction: topicCompletion,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+
+		topic := args[0]
+
+		splt := strings.Split(args[1], ",")
+		configs := make(map[string]string)
+
+		for _, kv := range splt {
+			s := strings.Split(kv, "=")
+
+			if len(s) != 2 {
+				continue
+			}
+
+			configs[s[0]] = s[1]
+		}
+
+		if len(configs) < 1 {
+			logger.Errorf("No valid configs found")
+		}
+
+		err := k.SetConfigValueTopic(cmd.Context(), kafeman.SetConfigValueTopicCommand{
+			Topic:  topic,
+			Values: configs,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Printf("\xE2\x9C\x85 Updated config.")
 	},
 }

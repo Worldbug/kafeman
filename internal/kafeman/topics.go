@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/worldbug/kafeman/internal/admin"
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 )
 
@@ -42,4 +43,31 @@ func (k *kafeman) ListTopicConsumers(ctx context.Context, topic string) (models.
 	return models.TopicConsumers{
 		Consumers: consumers,
 	}, err
+}
+
+func (k *kafeman) DeleteTopic(ctx context.Context, topic string) error {
+	adm := admin.NewAdmin(k.config)
+	err := adm.DeleteTopic(ctx, topic)
+	if err != nil {
+		logger.Errorf("Delete topic [%s] err: %+w", topic, err)
+	}
+
+	return err
+}
+
+type SetConfigValueTopicCommand struct {
+	Topic  string
+	Values map[string]string
+}
+
+func (k *kafeman) SetConfigValueTopic(ctx context.Context, command SetConfigValueTopicCommand) error {
+	adm := admin.NewAdmin(k.config)
+
+	err := adm.ConfigureTopic(ctx, command.Topic, command.Values)
+	if err != nil {
+		logger.Errorf("Delete topic [%s]\nvalues:\n%+v\n err: %+v",
+			command.Topic, command.Values, err)
+	}
+
+	return err
 }
