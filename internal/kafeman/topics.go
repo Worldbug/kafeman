@@ -71,3 +71,27 @@ func (k *kafeman) SetConfigValueTopic(ctx context.Context, command SetConfigValu
 
 	return err
 }
+
+type UpdateTopicCommand struct {
+	Topic           string
+	PartitionsCount int32
+	// partiton -> offset
+	Assignments [][]int32
+}
+
+func (k *kafeman) UpdateTopic(ctx context.Context, command UpdateTopicCommand) error {
+	adm := admin.NewAdmin(k.config)
+	err := adm.UpdateTopic(ctx,
+		command.Topic,
+		command.PartitionsCount,
+		command.Assignments,
+	)
+
+	if err != nil {
+		logger.Errorf("Update topic [%s]\n partitions: %+v\nassignments: %+v err: %+v",
+			command.Topic, command.PartitionsCount, command.Assignments, err,
+		)
+	}
+
+	return err
+}

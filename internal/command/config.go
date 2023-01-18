@@ -80,6 +80,7 @@ var ConfigCurrentContextCMD = &cobra.Command{
 var ConfigSelectCluster = &cobra.Command{
 	Use:     "select-cluster",
 	Aliases: []string{"ls"},
+	Example: "kafeman config select-cluster",
 	Short:   "Interactively select a cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		var clusterNames []string

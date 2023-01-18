@@ -26,3 +26,12 @@ func (a *Admin) ConfigureTopic(ctx context.Context, topic string, config map[str
 	adm := a.getSaramaAdmin()
 	return adm.IncrementalAlterConfig(sarama.TopicResource, topic, configs, false)
 }
+
+func (a *Admin) UpdateTopic(ctx context.Context, topic string, partitionsCount int32, assignments [][]int32) error {
+	adm := a.getSaramaAdmin()
+	if partitionsCount != -1 {
+		return adm.CreatePartitions(topic, partitionsCount, assignments, false)
+	}
+
+	return adm.AlterPartitionReassignments(topic, assignments)
+}

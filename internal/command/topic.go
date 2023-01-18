@@ -47,16 +47,16 @@ func init() {
 	// TopicCMD.AddCommand(createTopicCmd)
 	// TopicCMD.AddCommand(addConfigCmd)
 	TopicCMD.AddCommand(topicSetConfig)
-	// TopicCMD.AddCommand(updateTopicCmd)
+	TopicCMD.AddCommand(updateTopicCmd)
 
 	// createTopicCmd.Flags().Int32VarP(&partitionsFlag, "partitions", "p", int32(1), "Number of partitions")
 	// createTopicCmd.Flags().Int16VarP(&replicasFlag, "replicas", "r", int16(1), "Number of replicas")
 	// createTopicCmd.Flags().BoolVar(&compactFlag, "compact", false, "Enable topic compaction")
 
 	LsTopicsCMD.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
-	// topicsCmd.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
-	// updateTopicCmd.Flags().Int32VarP(&partitionsFlag, "partitions", "p", int32(-1), "Number of partitions")
-	// updateTopicCmd.Flags().StringVar(&partitionAssignmentsFlag, "partition-assignments", "", "Partition Assignments. Optional. If set in combination with -p, an assignment must be provided for each new partition. Example: '[[1,2,3],[1,2,3]]' (JSON Array syntax) assigns two new partitions to brokers 1,2,3. If used by itself, a reassignment must be provided for all partitions.")
+	TopicsCMD.Flags().BoolVar(&noHeaderFlag, "no-headers", false, "Hide table headers")
+	updateTopicCmd.Flags().Int32VarP(&partitionFlag, "partitions", "p", int32(-1), "Number of partitions")
+	updateTopicCmd.Flags().StringVar(&partitionAssignmentsFlag, "partition-assignments", "", "Partition Assignments. Optional. If set in combination with -p, an assignment must be provided for each new partition. Example: '[[1,2,3],[1,2,3]]' (JSON Array syntax) assigns two new partitions to brokers 1,2,3. If used by itself, a reassignment must be provided for all partitions.")
 }
 
 var TopicCMD = &cobra.Command{
@@ -177,6 +177,8 @@ func lsTopicsPrint(topics []models.Topic) {
 var TopicConsumersCMD = &cobra.Command{
 	Use:               "consumers",
 	Short:             "List topic consumers",
+	Args:              cobra.ExactArgs(1),
+	Example:           "kafeman topic consumers topic_name",
 	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
@@ -212,6 +214,7 @@ var deleteTopicCMD = &cobra.Command{
 	Use:               "delete TOPIC",
 	Short:             "Delete a topic",
 	Args:              cobra.ExactArgs(1),
+	Example:           "kafeman topic delete topic_name",
 	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
 		topic := args[0]
@@ -228,8 +231,8 @@ var deleteTopicCMD = &cobra.Command{
 
 var topicSetConfig = &cobra.Command{
 	Use:               "set-config",
-	Short:             "set topic config. requires Kafka >=2.3.0 on broker side and kaf cluster config.",
-	Example:           "kaf topic set-config topic.name cleanup.policy=delete",
+	Short:             "set topic config. requires Kafka >=2.3.0 on broker side and kafeman cluster config.",
+	Example:           "kafeman topic set-config topic.name cleanup.policy=delete",
 	Args:              cobra.ExactArgs(2),
 	ValidArgsFunction: topicCompletion,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -263,5 +266,39 @@ var topicSetConfig = &cobra.Command{
 		}
 
 		fmt.Printf("\xE2\x9C\x85 Updated config.")
+	},
+}
+
+var updateTopicCmd = &cobra.Command{
+	Use:               "update",
+	Short:             "Update topic",
+	Example:           "kafeman topic update topic_name -p 5 --partition-assignments '[[1,2,3],[1,2,3]]'",
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: topicCompletion,
+	Run: func(cmd *cobra.Command, args []string) {
+		k := kafeman.Newkafeman(conf)
+		topic := args[0]
+
+		if partitionFlag == -1 && partitionAssignmentsFlag == "" {
+			errorExit("Number of partitions and/or partition assignments must be given")
+		}
+
+		var assignments [][]int32
+		if partitionAssignmentsFlag != "" {
+			if err := json.Unmarshal([]byte(partitionAssignmentsFlag), &assignments); err != nil {
+				errorExit("Invalid partition assignments: %v", err)
+			}
+		}
+
+		err := k.UpdateTopic(cmd.Context(), kafeman.UpdateTopicCommand{
+			Topic:           topic,
+			PartitionsCount: partitionFlag,
+			Assignments:     assignments,
+		})
+		if err != nil {
+			os.Exit(1)
+		}
+
+		fmt.Printf("\xE2\x9C\x85 Updated topic!\n")
 	},
 }

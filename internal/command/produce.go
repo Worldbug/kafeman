@@ -34,8 +34,9 @@ func init() {
 }
 
 var ProduceExample = &cobra.Command{
-	Use:               "example TOPIC",
+	Use:               "example",
 	Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
+	Example:           "kafeman example topic_name",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: topicCompletion,
 	PreRun:            setupProtoDescriptorRegistry,
@@ -53,8 +54,9 @@ var ProduceExample = &cobra.Command{
 }
 
 var ProduceCMD = &cobra.Command{
-	Use:               "produce TOPIC",
+	Use:               "produce",
 	Short:             "Produce record. Reads data from stdin.",
+	Example:           "kafeman produce topic_name",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: topicCompletion,
 	PreRun:            setupProtoDescriptorRegistry,

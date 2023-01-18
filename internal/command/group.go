@@ -61,6 +61,7 @@ var GroupsCMD = &cobra.Command{
 var GroupDeleteCMD = &cobra.Command{
 	Use:               "delete",
 	Short:             "Delete group",
+	Example:           "kafeman group delete group_name",
 	Args:              cobra.MaximumNArgs(1),
 	ValidArgsFunction: validGroupArgs,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -124,6 +125,7 @@ func groupListPrint(groupDescs []kafeman.GroupInfo) {
 var GroupDescribeCMD = &cobra.Command{
 	Use:               "describe",
 	Short:             "Describe consumer group",
+	Example:           "kafeman group describe group_name",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: validGroupArgs,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -141,10 +143,11 @@ var GroupDescribeCMD = &cobra.Command{
 
 // TODO: переписать
 var GroupCommitCMD = &cobra.Command{
-	Use:   "commit",
-	Short: "Set offset for given consumer group",
-	Long:  "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
-	Args:  cobra.ExactArgs(1),
+	Use:     "commit",
+	Short:   "Set offset for given consumer group",
+	Long:    "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
+	Example: "kafeman group commit group_name -t topic_name --all-partitions  --offset 100500",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		k := kafeman.Newkafeman(conf)
 		group := args[0]

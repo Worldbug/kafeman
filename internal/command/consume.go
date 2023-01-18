@@ -57,6 +57,7 @@ func init() {
 var ConsumeCMD = &cobra.Command{
 	Use:               "consume",
 	Short:             "Consume messages from kafka topic",
+	Example:           "kafeman consume topic_name",
 	Args:              cobra.ExactArgs(1),
 	ValidArgsFunction: topicCompletion,
 	PreRun:            setupProtoDescriptorRegistry,
