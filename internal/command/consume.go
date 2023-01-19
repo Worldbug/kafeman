@@ -223,7 +223,7 @@ func getOffsetFromFlag() int64 {
 	default:
 		o, err := strconv.ParseInt(offsetFlag, 10, 64)
 		if err != nil {
-			errorExit("Could not parse '%s' to int64: %w", offsetFlag, err)
+			errorExit("Could not parse '%s' to int64: %v", offsetFlag, err)
 		}
 		offset = o
 	}

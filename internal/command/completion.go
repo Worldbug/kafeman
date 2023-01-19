@@ -53,20 +53,20 @@ var completionCmd = &cobra.Command{
 		case "bash":
 			err := RootCMD.GenBashCompletion(outWriter)
 			if err != nil {
-				errorExit("Failed to generate bash completion: %w", err)
+				errorExit("Failed to generate bash completion: %v", err)
 			}
 		case "zsh":
 			if err := RootCMD.GenZshCompletion(outWriter); err != nil {
-				errorExit("Failed to generate zsh completion: %w", err)
+				errorExit("Failed to generate zsh completion: %v", err)
 			}
 		case "fish":
 			if err := RootCMD.GenFishCompletion(outWriter, true); err != nil {
-				errorExit("Failed to generate fish completion: %w", err)
+				errorExit("Failed to generate fish completion: %v", err)
 			}
 		case "powershell":
 			err := RootCMD.GenPowerShellCompletion(outWriter)
 			if err != nil {
-				errorExit("Failed to generate powershell completion: %w", err)
+				errorExit("Failed to generate powershell completion: %v", err)
 			}
 		}
 	},
