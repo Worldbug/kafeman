@@ -23,7 +23,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build
-      run: go build -v -ldflags "-s -w -X main.version=$GITHUB_REF -X main.commit=${GITHUB_SHA::8}" ./cmd/kafeman
+      run: go build -v -ldflags "-s -w -X github.com/worldbug/kafeman/internal/command.version=$GITHUB_REF -X github.com/worldbug/kafeman/internal/command.commit=${GITHUB_SHA::8}" ./cmd/kafeman
 
     - name: Test
       run: go test -v ./...

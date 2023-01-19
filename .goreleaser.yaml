@@ -14,6 +14,9 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags:
+      - "-s -w -X github.com/worldbug/kafeman/internal/command.version={{.Version}} -X github.com/worldbug/kafeman/internal/command.commit={{.Commit}}"
+    
 archives:
   - replacements:
       darwin: Darwin
