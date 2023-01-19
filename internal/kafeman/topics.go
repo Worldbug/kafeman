@@ -49,7 +49,7 @@ func (k *kafeman) DeleteTopic(ctx context.Context, topic string) error {
 	adm := admin.NewAdmin(k.config)
 	err := adm.DeleteTopic(ctx, topic)
 	if err != nil {
-		logger.Errorf("Delete topic [%s] err: %+w", topic, err)
+		logger.Errorf("Delete topic [%s] err: %+v", topic, err)
 	}
 
 	return err
