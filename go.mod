@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/Landoop/schema-registry v0.0.0-20190327143759-50a5701c1891
 	github.com/Shopify/sarama v1.37.2
-	github.com/birdayz/kaf v0.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/jhump/protoreflect v1.14.0
 	github.com/linkedin/goavro/v2 v2.12.0
