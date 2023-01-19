@@ -31,14 +31,14 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
-#brews:
-#  - name: kafeman
-#    goarm: 6
-#    tap:
-#      owner: worldbug
-#      name: homebrew-kafeman
-#      branch: main
-#      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-#    commit_author:
-#      name: Kirill Tikhomirov
-#      email: none@gmail.com
+brews:
+  - name: kafeman
+    goarm: 6
+    tap:
+      owner: worldbug
+      name: homebrew-kafeman
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: Kirill Tikhomirov
+      email: none@gmail.com
