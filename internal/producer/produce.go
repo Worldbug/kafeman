@@ -5,8 +5,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/logger"
-
-	prt "github.com/birdayz/kaf/pkg/partitioner"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/Shopify/sarama"
 )
@@ -87,7 +86,7 @@ func getSaramaConfig(
 
 	switch partitioner {
 	case "jvm":
-		saramaConfig.Producer.Partitioner = prt.NewJVMCompatiblePartitioner
+		saramaConfig.Producer.Partitioner = utils.NewJVMCompatiblePartitioner
 	case "rand":
 		saramaConfig.Producer.Partitioner = sarama.NewRandomPartitioner
 	case "rr":
