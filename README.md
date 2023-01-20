@@ -8,9 +8,17 @@ kaf inspired cli for kafka management
 
 ## Install
 
+Homebrew
+```sh
+brew tap worldbug/kafeman
+brew install kafeman
+```
+
+Go
 ```sh
 go install github.com/wordlbug/kafeman/cmd/kafeman@latest
 ```
+
 make sure go/bin is in PATH
 
 ```sh
