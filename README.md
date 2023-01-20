@@ -83,8 +83,7 @@ topics:
     proto_paths:
     - project/protos
  ```
-###
-
+See also [usages examples](examples/usages.md)
 
 ## Status
 ### Legend
