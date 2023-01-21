@@ -107,6 +107,4 @@ func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, parti
 		r.CommitMessages(ctx, msg)
 		r.Close()
 	}
-
-	return
 }

@@ -50,13 +50,14 @@ func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand, decoder Decod
 	}
 
 	output := make(chan models.Message)
-	go k.decodeMessages(messages, output, wg, decoder)
+	go k.decodeMessages(ctx, messages, output, wg, decoder)
 	wg.Wait()
 
 	return output, nil
 }
 
 func (k *kafeman) decodeMessages(
+	ctx context.Context,
 	input <-chan models.Message, output chan<- models.Message,
 	wg *sync.WaitGroup, decoder Decoder) {
 	wg.Add(1)
@@ -65,6 +66,8 @@ func (k *kafeman) decodeMessages(
 
 	for {
 		select {
+		case <-ctx.Done():
+			return
 		case message, ok := <-input:
 			if !ok {
 				return
