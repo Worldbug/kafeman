@@ -106,7 +106,7 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 				return
 			}
 
-			c.asyncConsume(cp)
+			c.asyncConsume(ctx, cp)
 		}(p, wg)
 	}
 
@@ -114,11 +114,13 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 	close(c.messages)
 }
 
-func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
+func (c *Consumer) asyncConsume(ctx context.Context, cp sarama.PartitionConsumer) error {
 	left := c.messagesLimit
 
 	for {
 		select {
+		case <-ctx.Done():
+			return nil
 		case msg, ok := <-cp.Messages():
 			if !ok {
 				return nil

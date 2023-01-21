@@ -152,11 +152,11 @@ var GroupCommitCMD = &cobra.Command{
 		k := kafeman.Newkafeman(conf)
 		group := args[0]
 		offsets := make([]models.Offset, 0)
-		partitions := make([]int, 0)
+		// partitions := make([]int, 0)
 
-		if fromJsonFlag {
-			// TODO: commit from json
-		}
+		// if fromJsonFlag {
+		// TODO: commit from json
+		//}
 
 		if allPartitionsFlag {
 			t, err := k.GetTopicInfo(cmd.Context(), topicFlag)
@@ -171,13 +171,14 @@ var GroupCommitCMD = &cobra.Command{
 					Partition: int32(i),
 					Offset:    o,
 				})
-				partitions = append(partitions, i)
+				// partitions = append(partitions, i)
 			}
 		}
 
-		if !noConfirmFlag {
-
-		}
+		// TODO:
+		// if !noConfirmFlag {
+		//
+		// }
 
 		k.SetGroupOffset(cmd.Context(), group, topicFlag, offsets)
 	},

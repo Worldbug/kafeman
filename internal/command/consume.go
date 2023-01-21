@@ -216,10 +216,8 @@ func getOffsetFromFlag() int64 {
 	switch offsetFlag {
 	case "oldest":
 		offset = oldestOffset
-		break
 	case "newest":
 		offset = newestOffset
-		break
 	default:
 		o, err := strconv.ParseInt(offsetFlag, 10, 64)
 		if err != nil {
