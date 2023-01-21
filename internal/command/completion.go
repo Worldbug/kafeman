@@ -46,7 +46,7 @@ var completionCmd = &cobra.Command{
 	Short:                 "Generate completion script for bash, zsh, fish or powershell",
 	Long:                  completionDoc,
 	DisableFlagsInUseLine: true,
-	Args:                  cobra.ExactValidArgs(1),
+	Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
 	Run: func(cmd *cobra.Command, args []string) {
 		switch args[0] {

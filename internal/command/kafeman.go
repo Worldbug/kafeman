@@ -18,8 +18,8 @@ var (
 
 	outWriter io.Writer = os.Stdout
 	errWriter io.Writer = os.Stderr
-	inReader  io.Reader = os.Stdin
 
+	// nolint
 	colorableOut io.Writer = colorable.NewColorableStdout()
 
 	commit  string = "HEAD"
@@ -35,7 +35,6 @@ var RootCMD = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		outWriter = cmd.OutOrStdout()
 		errWriter = cmd.ErrOrStderr()
-		inReader = cmd.InOrStdin()
 
 		if outWriter != os.Stdout {
 			colorableOut = outWriter
@@ -48,6 +47,7 @@ func errorExit(format string, a ...interface{}) {
 	os.Exit(1)
 }
 
+// nolint
 func inTTY() bool {
 	fi, _ := os.Stdout.Stat()
 	return fi.Mode()&os.ModeCharDevice != 0

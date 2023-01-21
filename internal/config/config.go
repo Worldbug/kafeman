@@ -101,8 +101,7 @@ func SaveConfig(config Config, path string) error {
 	}
 
 	encoder := yaml.NewEncoder(file)
-	encoder.Encode(&config)
-	return nil
+	return encoder.Encode(&config)
 }
 
 func valueOrDefault(val, def string) string {
