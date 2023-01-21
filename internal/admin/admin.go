@@ -10,6 +10,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/segmentio/kafka-go"
+	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
 func NewAdmin(config config.Config) *Admin {
@@ -20,14 +21,6 @@ func NewAdmin(config config.Config) *Admin {
 
 type Admin struct {
 	config config.Config
-}
-
-func (a *Admin) getSaramaConfig() *sarama.Config {
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.Version = sarama.V1_1_0_0
-	saramaConfig.Producer.Return.Successes = true
-
-	return saramaConfig
 }
 
 func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic string, ts time.Time) int64 {
@@ -62,14 +55,14 @@ func (a *Admin) conn() (*kafka.Conn, error) {
 
 	return kafka.Dial("tcp", a.config.GetCurrentCluster().Brokers[0])
 }
-func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
+func (a *Admin) getSaramaAdmin() (sarama.ClusterAdmin, error) {
 	var admin sarama.ClusterAdmin
-	clusterAdmin, err := sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, a.getSaramaConfig())
+	saramaConfig, err := sarama_config.GetSaramaFromConfig(a.config)
 	if err != nil {
-		return admin
+		return admin, err
 	}
 
-	return clusterAdmin
+	return sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, saramaConfig)
 }
 
 func (a *Admin) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) error {

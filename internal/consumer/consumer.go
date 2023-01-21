@@ -11,6 +11,7 @@ import (
 	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/Shopify/sarama"
+	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
 func NewSaramaConsuemr(
@@ -61,7 +62,10 @@ func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, err
 
 func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
-	saramaConfig := c.getSaramaConfig()
+	saramaConfig, err := c.getSaramaConfig()
+	if err != nil {
+		return nil, err
+	}
 
 	consumer, err := sarama.NewConsumer(addrs, saramaConfig)
 	if err != nil {
@@ -143,22 +147,28 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 
 }
 
-func (c *Consumer) getSaramaConfig() *sarama.Config {
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.Version = sarama.V1_1_0_0
-	saramaConfig.Producer.Return.Successes = true
+func (c *Consumer) getSaramaConfig() (*sarama.Config, error) {
+	saramaConfig, err := sarama_config.GetSaramaFromConfig(c.config)
+	if err != nil {
+		return nil, err
+	}
+
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.commit
 
 	if c.offset == sarama.OffsetNewest || c.offset == sarama.OffsetOldest {
 		saramaConfig.Consumer.Offsets.Initial = c.offset
 	}
 
-	return saramaConfig
+	return saramaConfig, nil
 }
 
 func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, error) {
 	addrs := c.config.GetCurrentCluster().Brokers
-	saramaConfig := c.getSaramaConfig()
+	saramaConfig, err := c.getSaramaConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	topic := c.topic
 
 	// defer cg.close
