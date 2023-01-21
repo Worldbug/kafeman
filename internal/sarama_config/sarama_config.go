@@ -3,7 +3,7 @@ package sarama_config
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
+	"os"
 
 	"github.com/Shopify/sarama"
 	"github.com/pkg/errors"
@@ -79,7 +79,7 @@ func initTLS(cluster config.Cluster, saramaConfig *sarama.Config) error {
 	}
 
 	if cluster.TLS.Cafile != "" {
-		caCert, err := ioutil.ReadFile(cluster.TLS.Cafile)
+		caCert, err := os.ReadFile(cluster.TLS.Cafile)
 		if err != nil {
 			return errors.Wrap(err, "Unable to read Cafile")
 		}
@@ -89,11 +89,12 @@ func initTLS(cluster config.Cluster, saramaConfig *sarama.Config) error {
 	}
 
 	if cluster.TLS.Clientfile != "" && cluster.TLS.Clientkeyfile != "" {
-		clientCert, err := ioutil.ReadFile(cluster.TLS.Clientfile)
+		clientCert, err := os.ReadFile(cluster.TLS.Clientfile)
 		if err != nil {
 			return errors.Wrap(err, "Unable to read Cafile")
 		}
-		clientKey, err := ioutil.ReadFile(cluster.TLS.Clientkeyfile)
+
+		clientKey, err := os.ReadFile(cluster.TLS.Clientkeyfile)
 		if err != nil {
 			return errors.Wrap(err, "Unable to read Clientkeyfile")
 		}
@@ -103,8 +104,6 @@ func initTLS(cluster config.Cluster, saramaConfig *sarama.Config) error {
 			return errors.Wrap(err, "Unable to create KeyPair")
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
-
-		tlsConfig.BuildNameToCertificate()
 	}
 
 	saramaConfig.Net.TLS.Config = tlsConfig
@@ -127,7 +126,7 @@ func initCG(cluster config.Cluster, saramaConfig *sarama.Config) error {
 			InsecureSkipVerify: cluster.TLS.Insecure,
 		}
 		if cluster.TLS.Cafile != "" {
-			caCert, err := ioutil.ReadFile(cluster.TLS.Cafile)
+			caCert, err := os.ReadFile(cluster.TLS.Cafile)
 			if err != nil {
 				return errors.Wrap(err, "Unable to read Cafile")
 			}
