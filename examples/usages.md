@@ -26,6 +26,9 @@ topics:
     - ~/my_project/protos
 ```
 
+Other examples of configuration (with auth) you can see in this folder
+(they borrowed from kaf)
+
 # Consume
 Consume all massages where key equal "my_key"
 ```sh
