@@ -15,6 +15,8 @@ require (
 	github.com/segmentio/kafka-go v0.4.38
 	github.com/spf13/cobra v1.6.1
 	github.com/vmihailenco/msgpack/v5 v5.3.5
+	github.com/xdg-go/scram v1.1.1
+	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -44,10 +46,14 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/stringprep v1.0.3 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
+	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )

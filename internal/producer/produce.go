@@ -22,9 +22,13 @@ func NewProducer(
 	input <-chan Message,
 ) (*Producer, error) {
 	addrs := config.GetCurrentCluster().Brokers
+	saramaConfig, err := getSaramaConfig(
+		config, partitioner, partition)
+	if err != nil {
+		return nil, err
+	}
 
-	producer, err := sarama.NewSyncProducer(addrs, getSaramaConfig(
-		config, partitioner, partition))
+	producer, err := sarama.NewSyncProducer(addrs, saramaConfig)
 	if err != nil {
 		return &Producer{}, nil
 	}
@@ -78,11 +82,12 @@ func getSaramaConfig(
 	conf config.Config,
 	partitioner string,
 	partition int32,
-) *sarama.Config {
+) (*sarama.Config, error) {
 
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.Version = sarama.V1_1_0_0
-	saramaConfig.Producer.Return.Successes = true
+	saramaConfig, err := utils.GetSaramaFromConfig(conf)
+	if err != nil {
+		return nil, err
+	}
 
 	switch partitioner {
 	case "jvm":
@@ -101,5 +106,5 @@ func getSaramaConfig(
 		saramaConfig.Producer.Partitioner = sarama.NewManualPartitioner
 	}
 
-	return saramaConfig
+	return saramaConfig, nil
 }

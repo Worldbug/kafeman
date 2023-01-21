@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/Shopify/sarama"
 	"github.com/segmentio/kafka-go"
@@ -20,14 +21,6 @@ func NewAdmin(config config.Config) *Admin {
 
 type Admin struct {
 	config config.Config
-}
-
-func (a *Admin) getSaramaConfig() *sarama.Config {
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.Version = sarama.V1_1_0_0
-	saramaConfig.Producer.Return.Successes = true
-
-	return saramaConfig
 }
 
 func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic string, ts time.Time) int64 {
@@ -64,7 +57,9 @@ func (a *Admin) conn() (*kafka.Conn, error) {
 }
 func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
 	var admin sarama.ClusterAdmin
-	clusterAdmin, err := sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, a.getSaramaConfig())
+	saramaConfig, err := utils.GetSaramaFromConfig(a.config)
+	// TODO:
+	clusterAdmin, err := sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, saramaConfig)
 	if err != nil {
 		return admin
 	}
