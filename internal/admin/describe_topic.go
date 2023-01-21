@@ -13,8 +13,12 @@ import (
 func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicInfo, error) {
 	topicInfo := models.NewTopicInfo()
 	topicInfo.TopicName = topic
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return topicInfo, err
+	}
 
-	info, err := a.getSaramaAdmin().DescribeConfig(
+	info, err := adm.DescribeConfig(
 		sarama.ConfigResource{
 			Type: sarama.TopicResource,
 			Name: topic,
@@ -50,7 +54,10 @@ func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicIn
 }
 
 func (a *Admin) describeTopicPartitons(ctx context.Context, topic string) ([]models.PartitionInfo, error) {
-	adm := a.getSaramaAdmin()
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return nil, err
+	}
 
 	topicDetails, err := adm.DescribeTopics([]string{topic})
 	if err != nil {

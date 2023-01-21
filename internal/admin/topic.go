@@ -7,7 +7,10 @@ import (
 )
 
 func (a *Admin) DeleteTopic(ctx context.Context, topic string) error {
-	adm := a.getSaramaAdmin()
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return err
+	}
 	return adm.DeleteTopic(topic)
 }
 
@@ -23,12 +26,19 @@ func (a *Admin) ConfigureTopic(ctx context.Context, topic string, config map[str
 		}
 	}
 
-	adm := a.getSaramaAdmin()
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return err
+	}
 	return adm.IncrementalAlterConfig(sarama.TopicResource, topic, configs, false)
 }
 
 func (a *Admin) UpdateTopic(ctx context.Context, topic string, partitionsCount int32, assignments [][]int32) error {
-	adm := a.getSaramaAdmin()
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return err
+	}
+
 	if partitionsCount != -1 {
 		return adm.CreatePartitions(topic, partitionsCount, assignments, false)
 	}
@@ -42,7 +52,10 @@ func (a *Admin) CreateTopic(ctx context.Context,
 	replicationFactor int16,
 	cleanupPolicy string,
 ) error {
-	adm := a.getSaramaAdmin()
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return err
+	}
 	return adm.CreateTopic(topicName, &sarama.TopicDetail{
 		NumPartitions:     partitionsCount,
 		ReplicationFactor: replicationFactor,
@@ -53,7 +66,10 @@ func (a *Admin) CreateTopic(ctx context.Context,
 }
 
 func (a *Admin) AddConfig(ctx context.Context, topic, key, value string) error {
-	adm := a.getSaramaAdmin()
+	adm, err := a.getSaramaAdmin()
+	if err != nil {
+		return err
+	}
 
 	return adm.AlterConfig(sarama.TopicResource, topic, map[string]*string{
 		key: &value,

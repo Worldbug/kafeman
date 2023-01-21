@@ -1,4 +1,4 @@
-package utils
+package sarama_config
 
 import (
 	"crypto/tls"

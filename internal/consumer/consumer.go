@@ -7,11 +7,11 @@ import (
 
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/config"
-	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/worldbug/kafeman/internal/models"
 
 	"github.com/Shopify/sarama"
+	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
 func NewSaramaConsuemr(
@@ -148,7 +148,7 @@ func (c *Consumer) asyncConsume(cp sarama.PartitionConsumer) error {
 }
 
 func (c *Consumer) getSaramaConfig() (*sarama.Config, error) {
-	saramaConfig, err := utils.GetSaramaFromConfig(c.config)
+	saramaConfig, err := sarama_config.GetSaramaFromConfig(c.config)
 	if err != nil {
 		return nil, err
 	}

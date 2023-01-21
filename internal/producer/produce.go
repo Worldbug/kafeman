@@ -5,6 +5,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/logger"
+	"github.com/worldbug/kafeman/internal/sarama_config"
 	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/Shopify/sarama"
@@ -84,7 +85,7 @@ func getSaramaConfig(
 	partition int32,
 ) (*sarama.Config, error) {
 
-	saramaConfig, err := utils.GetSaramaFromConfig(conf)
+	saramaConfig, err := sarama_config.GetSaramaFromConfig(conf)
 	if err != nil {
 		return nil, err
 	}

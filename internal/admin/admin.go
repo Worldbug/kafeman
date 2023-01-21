@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/worldbug/kafeman/internal/config"
-	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/Shopify/sarama"
 	"github.com/segmentio/kafka-go"
+	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
 func NewAdmin(config config.Config) *Admin {
@@ -55,16 +55,14 @@ func (a *Admin) conn() (*kafka.Conn, error) {
 
 	return kafka.Dial("tcp", a.config.GetCurrentCluster().Brokers[0])
 }
-func (a *Admin) getSaramaAdmin() sarama.ClusterAdmin {
+func (a *Admin) getSaramaAdmin() (sarama.ClusterAdmin, error) {
 	var admin sarama.ClusterAdmin
-	saramaConfig, err := utils.GetSaramaFromConfig(a.config)
-	// TODO:
-	clusterAdmin, err := sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, saramaConfig)
+	saramaConfig, err := sarama_config.GetSaramaFromConfig(a.config)
 	if err != nil {
-		return admin
+		return admin, err
 	}
 
-	return clusterAdmin
+	return sarama.NewClusterAdmin(a.config.GetCurrentCluster().Brokers, saramaConfig)
 }
 
 func (a *Admin) asyncGetLastOffset(ctx context.Context, wg *sync.WaitGroup, mu *sync.Mutex, offsetMap map[string]map[int]int64, topic string, parts ...int) error {
