@@ -30,3 +30,9 @@ func MessageFromSarama(msg *sarama.ConsumerMessage) Message {
 		Value:     msg.Value,
 	}
 }
+
+type RichMessage struct {
+	Message
+	DecodedKey   []byte
+	DecodedValue []byte
+}
