@@ -1,4 +1,4 @@
-package command
+package produce_cmd
 
 import (
 	"fmt"
@@ -53,32 +53,36 @@ var ProduceExample = &cobra.Command{
 	},
 }
 
-var ProduceCMD = &cobra.Command{
-	Use:               "produce",
-	Short:             "Produce record. Reads data from stdin.",
-	Example:           "kafeman produce topic_name",
-	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: topicCompletion,
-	PreRun:            setupProtoDescriptorRegistry,
-	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf)
+func NewProduceCMD() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "produce",
+		Short:             "Produce record. Reads data from stdin.",
+		Example:           "kafeman produce topic_name",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: topicCompletion,
+		PreRun:            setupProtoDescriptorRegistry,
+		Run: func(cmd *cobra.Command, args []string) {
+			k := kafeman.Newkafeman(conf)
 
-		command := kafeman.ProduceCommand{
-			Topic:       args[0],
-			BufferSize:  bufferSizeFlag,
-			Input:       os.Stdin,
-			Output:      os.Stdout,
-			Partition:   partitionFlag,
-			Partitioner: partitionerFlag,
-		}
+			command := kafeman.ProduceCommand{
+				Topic:       args[0],
+				BufferSize:  bufferSizeFlag,
+				Input:       os.Stdin,
+				Output:      os.Stdout,
+				Partition:   partitionFlag,
+				Partitioner: partitionerFlag,
+			}
 
-		encoder, err := getEncoder(command)
-		if err != nil {
-			errorExit("%+v", err)
-		}
+			encoder, err := getEncoder(command)
+			if err != nil {
+				errorExit("%+v", err)
+			}
 
-		k.Produce(cmd.Context(), command, encoder)
-	},
+			k.Produce(cmd.Context(), command, encoder)
+		},
+	}
+
+	return cmd
 }
 
 func getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {

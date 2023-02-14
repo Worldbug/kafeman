@@ -1,4 +1,4 @@
-package command
+package group_cmd
 
 import (
 	"encoding/json"
@@ -47,9 +47,13 @@ func init() {
 	GroupCommitCMD.Flags().BoolVar(&noConfirmFlag, "y", false, "Do not prompt for confirmation")
 }
 
-var GroupCMD = &cobra.Command{
-	Use:   "group",
-	Short: "Display information about consumer groups.",
+func NewGroupCMD() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "group",
+		Short: "Display information about consumer groups.",
+	}
+
+	return cmd
 }
 
 var GroupsCMD = &cobra.Command{

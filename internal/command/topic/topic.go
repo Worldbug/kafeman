@@ -1,4 +1,4 @@
-package command
+package topic_cmd
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
@@ -59,9 +60,13 @@ func init() {
 	updateTopicCmd.Flags().StringVar(&partitionAssignmentsFlag, "partition-assignments", "", "Partition Assignments. Optional. If set in combination with -p, an assignment must be provided for each new partition. Example: '[[1,2,3],[1,2,3]]' (JSON Array syntax) assigns two new partitions to brokers 1,2,3. If used by itself, a reassignment must be provided for all partitions.")
 }
 
-var TopicCMD = &cobra.Command{
-	Use:   "topic",
-	Short: "Create and describe topics.",
+func NewTopicCMD() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "topic",
+		Short: "Create and describe topics.",
+	}
+
+	return cmd
 }
 
 func newTabWriter() *tabwriter.Writer {
@@ -71,24 +76,28 @@ func newTabWriter() *tabwriter.Writer {
 	)
 }
 
-var DescribeCMD = &cobra.Command{
-	Use:               "describe",
-	Short:             "Describe topic info",
-	ValidArgsFunction: topicCompletion,
-	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf)
-		topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
-		if err != nil {
-			errorExit("%+v", err)
-		}
+func NewDescribeCMD(config config.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "describe",
+		Short:             "Describe topic info",
+		ValidArgsFunction: topicCompletion,
+		Run: func(cmd *cobra.Command, args []string) {
+			k := kafeman.Newkafeman(config)
+			topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
+			if err != nil {
+				errorExit("%+v", err)
+			}
 
-		if asJsonFlag {
-			describeTopicPrintJson(topicInfo)
-			return
-		}
+			if asJsonFlag {
+				describeTopicPrintJson(topicInfo)
+				return
+			}
 
-		describeTopicPrint(topicInfo)
-	},
+			describeTopicPrint(topicInfo)
+		},
+	}
+
+	return cmd
 }
 
 func describeTopicPrintJson(topicInfo models.TopicInfo) {
@@ -134,10 +143,14 @@ func describeTopicPrint(topicInfo models.TopicInfo) {
 
 }
 
-var TopicsCMD = &cobra.Command{
-	Use:   "topics",
-	Short: "List topics",
-	Run:   LsTopicsCMD.Run,
+func NewTopicsCMD() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "topics",
+		Short: "List topics",
+		Run:   LsTopicsCMD.Run,
+	}
+
+	return cmd
 }
 
 var LsTopicsCMD = &cobra.Command{

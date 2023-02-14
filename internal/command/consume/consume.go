@@ -1,4 +1,4 @@
-package command
+package consume_cmd
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
@@ -24,7 +25,48 @@ var (
 	protoFiles   []string
 	protoExclude []string
 	protoType    string
-	encoding     string
+)
+
+func NewConsumeCMD(config config.Config) *cobra.Command {
+	consume := &consumeOptions{
+		config: config,
+	}
+
+	cmd := &cobra.Command{
+		Use:               "consume",
+		Short:             "Consume messages from kafka topic",
+		Example:           "kafeman consume topic_name",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completion.NewGroupCompletion(config),
+		PreRun:            setupProtoDescriptorRegistry,
+		Run:               consume.run,
+	}
+
+	cmd.Flags().StringVar(&consume.offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
+	cmd.RegisterFlagCompletionFunc("offset", completion.NewOffsetCompletion())
+	cmd.Flags().StringVar(&consume.encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
+	cmd.RegisterFlagCompletionFunc("force-encoding", completion.NewEncodingCompletion())
+	cmd.Flags().StringVarP(&consume.groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
+	cmd.RegisterFlagCompletionFunc("group", completion.NewGroupCompletion(config))
+	cmd.Flags().BoolVarP(&consume.followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
+	cmd.Flags().BoolVar(&consume.commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
+	cmd.Flags().BoolVar(&consume.printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
+	cmd.Flags().Int32SliceVarP(&consume.partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
+	cmd.Flags().Int32VarP(&consume.messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
+	cmd.Flags().StringVar(&consume.fromAtFlag, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
+	cmd.RegisterFlagCompletionFunc("from", completion.NewTimeCompletion())
+
+	return cmd
+}
+
+func newConsumeCMD(config config.Config) *consumeOptions {
+	return &consumeOptions{
+		config: config,
+	}
+}
+
+type consumeOptions struct {
+	config config.Config
 
 	offsetFlag        string
 	groupIDFlag       string
@@ -34,76 +76,52 @@ var (
 	printMetaFlag     bool
 	fromAtFlag        string
 	messagesCountFlag int32
-)
 
-func init() {
-	RootCMD.AddCommand(ConsumeCMD)
-
-	ConsumeCMD.Flags().StringVar(&offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
-	ConsumeCMD.RegisterFlagCompletionFunc("offset", offsetCompletion)
-	ConsumeCMD.Flags().StringVar(&encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
-	ConsumeCMD.RegisterFlagCompletionFunc("force-encoding", encodingCompletion)
-	ConsumeCMD.Flags().StringVarP(&groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
-	ConsumeCMD.RegisterFlagCompletionFunc("group", groupCompletion)
-	ConsumeCMD.Flags().BoolVarP(&followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
-	ConsumeCMD.Flags().BoolVar(&commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
-	ConsumeCMD.Flags().BoolVar(&printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
-	ConsumeCMD.Flags().Int32SliceVarP(&partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
-	ConsumeCMD.Flags().Int32VarP(&messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
-	ConsumeCMD.Flags().StringVar(&fromAtFlag, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
-	ConsumeCMD.RegisterFlagCompletionFunc("from", timeCompletion)
+	encoding string
 }
 
-var ConsumeCMD = &cobra.Command{
-	Use:               "consume",
-	Short:             "Consume messages from kafka topic",
-	Example:           "kafeman consume topic_name",
-	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: topicCompletion,
-	PreRun:            setupProtoDescriptorRegistry,
-	Run: func(cmd *cobra.Command, args []string) {
-		offset := getOffsetFromFlag()
-		topic := args[0]
+func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
+	offset := c.getOffsetFromFlag()
+	topic := args[0]
 
-		k := kafeman.Newkafeman(conf)
+	k := kafeman.Newkafeman(c.config)
 
-		command := kafeman.ConsumeCommand{
-			Topic:          topic,
-			ConsumerGroup:  groupIDFlag,
-			Partitions:     partitionsFlag,
-			Offset:         offset,
-			CommitMessages: commitFlag,
-			Follow:         followFlag,
-			WithMeta:       printMetaFlag,
-			MessagesCount:  messagesCountFlag,
-			FromTime:       parseTime(fromAtFlag),
-		}
+	command := kafeman.ConsumeCommand{
+		Topic:          topic,
+		ConsumerGroup:  c.groupIDFlag,
+		Partitions:     c.partitionsFlag,
+		Offset:         offset,
+		CommitMessages: c.commitFlag,
+		Follow:         c.followFlag,
+		WithMeta:       c.printMetaFlag,
+		MessagesCount:  c.messagesCountFlag,
+		FromTime:       parseTime(c.fromAtFlag),
+	}
 
-		decoder, err := getDecoder(command)
-		if err != nil {
-			errorExit("%+v", err)
-		}
+	decoder, err := c.getDecoder(command)
+	if err != nil {
+		errorExit("%+v", err)
+	}
 
-		messages, err := k.Consume(cmd.Context(), command, decoder)
-		if err != nil {
-			errorExit("%+v", err)
-		}
+	messages, err := k.Consume(cmd.Context(), command, decoder)
+	if err != nil {
+		errorExit("%+v", err)
+	}
 
-		for message := range messages {
-			printMessage(message, printMetaFlag)
-		}
-	},
+	for message := range messages {
+		printMessage(message, c.printMetaFlag)
+	}
 }
 
-func getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder, error) {
-	topicConfig, ok := conf.Topics[cmd.Topic]
-	if !ok && encoding == "" {
+func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder, error) {
+	topicConfig, ok := c.config.Topics[cmd.Topic]
+	if !ok && c.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}
 
 	// override encoding
-	if encoding != "" {
-		topicConfig.Encoding = config.Encoding(encoding)
+	if c.encoding != "" {
+		topicConfig.Encoding = config.Encoding(c.encoding)
 	}
 
 	// force type
@@ -211,17 +229,17 @@ var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
 	}
 }
 
-func getOffsetFromFlag() int64 {
+func (c *consumeOptions) getOffsetFromFlag() int64 {
 	var offset int64
-	switch offsetFlag {
+	switch c.offsetFlag {
 	case "oldest":
 		offset = oldestOffset
 	case "newest":
 		offset = newestOffset
 	default:
-		o, err := strconv.ParseInt(offsetFlag, 10, 64)
+		o, err := strconv.ParseInt(c.offsetFlag, 10, 64)
 		if err != nil {
-			errorExit("Could not parse '%s' to int64: %v", offsetFlag, err)
+			errorExit("Could not parse '%s' to int64: %v", c.offsetFlag, err)
 		}
 		offset = o
 	}
