@@ -3,7 +3,6 @@ package kafeman_cmd
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/worldbug/kafeman/internal/config"
 
@@ -18,9 +17,6 @@ var (
 
 	commit  string = "HEAD"
 	version string = "latest"
-
-	// TODO: remove
-	// protoRegistry *serializers.DescriptorRegistry
 )
 
 func NewKafemanCMD(config config.Config) *cobra.Command {
@@ -29,12 +25,13 @@ func NewKafemanCMD(config config.Config) *cobra.Command {
 		Short:   "Kafka Command Line utility",
 		Version: fmt.Sprintf("%s (%s)", version, commit),
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			outWriter = cmd.OutOrStdout()
-			errWriter = cmd.ErrOrStderr()
+			// TODO: remove ?
+			// outWriter = cmd.OutOrStdout()
+			// errWriter = cmd.ErrOrStderr()
 
-			if outWriter != os.Stdout {
-				colorableOut = outWriter
-			}
+			// if outWriter != os.Stdout {
+			// 	colorableOut = outWriter
+			// }
 		},
 	}
 }

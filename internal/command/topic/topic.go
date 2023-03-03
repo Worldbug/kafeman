@@ -16,15 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	tabwriterMinWidth       = 6
-	tabwriterMinWidthNested = 2
-	tabwriterWidth          = 4
-	tabwriterPadding        = 3
-	tabwriterPadChar        = ' '
-	tabwriterFlags          = 0
-)
-
 var (
 	partitionAssignmentsFlag string
 	// TODO: delete

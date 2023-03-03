@@ -3,11 +3,13 @@ package consume_cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"io"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/worldbug/kafeman/internal/command/completion"
+	"github.com/worldbug/kafeman/internal/command"
+	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
@@ -16,45 +18,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	newestOffset = -1
-	oldestOffset = -2
-)
-
-var (
-	protoFiles   []string
-	protoExclude []string
-	protoType    string
-)
-
 func NewConsumeCMD(config config.Config) *cobra.Command {
-	consume := &consumeOptions{
-		config: config,
-	}
+	options := newConsumeOptions(config)
 
 	cmd := &cobra.Command{
 		Use:               "consume",
 		Short:             "Consume messages from kafka topic",
 		Example:           "kafeman consume topic_name",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: completion.NewGroupCompletion(config),
-		PreRun:            setupProtoDescriptorRegistry,
-		Run:               consume.run,
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		PreRun:            options.setupProtoDescriptorRegistry,
+		Run:               options.run,
 	}
 
-	cmd.Flags().StringVar(&consume.offsetFlag, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
-	cmd.RegisterFlagCompletionFunc("offset", completion.NewOffsetCompletion())
-	cmd.Flags().StringVar(&consume.encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
-	cmd.RegisterFlagCompletionFunc("force-encoding", completion.NewEncodingCompletion())
-	cmd.Flags().StringVarP(&consume.groupIDFlag, "group", "g", "", "Consumer Group ID to use for consume")
-	cmd.RegisterFlagCompletionFunc("group", completion.NewGroupCompletion(config))
-	cmd.Flags().BoolVarP(&consume.followFlag, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
-	cmd.Flags().BoolVar(&consume.commitFlag, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
-	cmd.Flags().BoolVar(&consume.printMetaFlag, "meta", false, "Print with meta info (marshal into json)")
-	cmd.Flags().Int32SliceVarP(&consume.partitionsFlag, "partitions", "p", []int32{}, "Partitions to consume")
-	cmd.Flags().Int32VarP(&consume.messagesCountFlag, "tail", "n", 0, "Print last n messages per partition")
-	cmd.Flags().StringVar(&consume.fromAtFlag, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
-	cmd.RegisterFlagCompletionFunc("from", completion.NewTimeCompletion())
+	cmd.Flags().StringVar(&options.offset, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
+	cmd.RegisterFlagCompletionFunc("offset", completion_cmd.NewOffsetCompletion())
+	cmd.Flags().StringVar(&options.encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
+	cmd.RegisterFlagCompletionFunc("force-encoding", completion_cmd.NewEncodingCompletion())
+	cmd.Flags().StringVarP(&options.groupID, "group", "g", "", "Consumer Group ID to use for consume")
+	cmd.RegisterFlagCompletionFunc("group", completion_cmd.NewGroupCompletion(config))
+	cmd.Flags().BoolVarP(&options.follow, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
+	cmd.Flags().BoolVar(&options.commit, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
+	cmd.Flags().BoolVar(&options.printMeta, "meta", false, "Print with meta info (marshal into json)")
+	cmd.Flags().Int32SliceVarP(&options.partitions, "partitions", "p", []int32{}, "Partitions to consume")
+	cmd.Flags().Int32VarP(&options.messagesCount, "tail", "n", 0, "Print last n messages per partition")
+	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
+	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
 
 	return cmd
 }
@@ -65,51 +54,71 @@ func newConsumeCMD(config config.Config) *consumeOptions {
 	}
 }
 
+func newConsumeOptions(config config.Config) *consumeOptions {
+	return &consumeOptions{
+		config: config,
+		out:    os.Stdout,
+	}
+}
+
 type consumeOptions struct {
 	config config.Config
 
-	offsetFlag        string
-	groupIDFlag       string
-	partitionsFlag    []int32
-	followFlag        bool
-	commitFlag        bool
-	printMetaFlag     bool
-	fromAtFlag        string
-	messagesCountFlag int32
+	offset        string
+	groupID       string
+	partitions    []int32
+	follow        bool
+	commit        bool
+	printMeta     bool
+	fromAt        string
+	messagesCount int32
+
+	// TODO: refactor
+	out io.Writer
 
 	encoding string
+
+	// TODO: refactor
+	protoFiles    []string
+	protoExclude  []string
+	protoType     string
+	protoRegistry *serializers.DescriptorRegistry
 }
 
 func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
-	offset := c.getOffsetFromFlag()
+	offset := command.GetOffsetFromFlag(c.offset)
 	topic := args[0]
 
 	k := kafeman.Newkafeman(c.config)
 
 	command := kafeman.ConsumeCommand{
 		Topic:          topic,
-		ConsumerGroup:  c.groupIDFlag,
-		Partitions:     c.partitionsFlag,
+		ConsumerGroup:  c.groupID,
+		Partitions:     c.partitions,
 		Offset:         offset,
-		CommitMessages: c.commitFlag,
-		Follow:         c.followFlag,
-		WithMeta:       c.printMetaFlag,
-		MessagesCount:  c.messagesCountFlag,
-		FromTime:       parseTime(c.fromAtFlag),
+		CommitMessages: c.commit,
+		Follow:         c.follow,
+		WithMeta:       c.printMeta,
+		MessagesCount:  c.messagesCount,
+		FromTime:       command.ParseTime(c.fromAt),
 	}
 
 	decoder, err := c.getDecoder(command)
 	if err != nil {
-		errorExit("%+v", err)
+		// TODO:
+		// errorExit("%+v", err)
+		panic(err)
 	}
 
 	messages, err := k.Consume(cmd.Context(), command, decoder)
 	if err != nil {
-		errorExit("%+v", err)
+		// TODO:
+		// errorExit("%+v", err)
+		panic(err)
 	}
 
 	for message := range messages {
-		printMessage(message, c.printMetaFlag)
+		printMessage(message, c.out, c.printMeta)
 	}
 }
 
@@ -152,28 +161,28 @@ func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder
 	return serializers.NewRawSerializer(), nil
 }
 
-func printMessage(message models.Message, printMeta bool) {
+func printMessage(message models.Message, out io.Writer, printMeta bool) {
 	if !printMeta {
-		fmt.Fprintln(outWriter, string(message.Value))
+		fmt.Fprintln(out, string(message.Value))
 		return
 	}
 
-	Print(message)
+	Print(message, out)
 }
 
-func Print(data models.Message) {
-	if isJSON(data.Value) {
+func Print(data models.Message, out io.Writer) {
+	if command.IsJSON(data.Value) {
 		ms := messageToPrintable(data)
 		v := ms.Value
 		ms.Value = ""
 		msg, _ := json.Marshal(ms)
 		m := strings.Replace(string(msg), `"value":""`, fmt.Sprintf(`"value":%v`, v), 1)
-		fmt.Fprintln(outWriter, m)
+		fmt.Fprintln(out, m)
 		return
 	}
 
 	msg, _ := json.Marshal(messageToPrintable(data))
-	fmt.Fprintln(outWriter, string(msg))
+	fmt.Fprintln(out, string(msg))
 }
 
 type PrintableMessage struct {
@@ -201,48 +210,16 @@ func messageToPrintable(msg models.Message) PrintableMessage {
 	}
 }
 
-func isJSON(data []byte) bool {
-	var i interface{}
-	if err := json.Unmarshal(data, &i); err == nil {
-		return true
-	}
-	return false
-}
-
-func parseTime(str string) time.Time {
-	t, err := time.Parse("2006-01-02T15:04:05", str)
-	if err != nil {
-		return time.Unix(0, 0)
-	}
-
-	return t.UTC()
-}
-
-var setupProtoDescriptorRegistry = func(cmd *cobra.Command, args []string) {
-	if protoType != "" {
-		r, err := serializers.NewDescriptorRegistry(protoFiles, protoExclude)
+// TODO: fix duplicate
+func (c *consumeOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args []string) {
+	if c.protoType != "" {
+		r, err := serializers.NewDescriptorRegistry(c.protoFiles, c.protoExclude)
 		if err != nil {
-			errorExit("Failed to load protobuf files: %v\n", err)
+			// TODO:
+			// errorExit("Failed to load protobuf files: %v\n", err)
+			panic(err)
 		}
 
-		protoRegistry = r
+		c.protoRegistry = r
 	}
-}
-
-func (c *consumeOptions) getOffsetFromFlag() int64 {
-	var offset int64
-	switch c.offsetFlag {
-	case "oldest":
-		offset = oldestOffset
-	case "newest":
-		offset = newestOffset
-	default:
-		o, err := strconv.ParseInt(c.offsetFlag, 10, 64)
-		if err != nil {
-			errorExit("Could not parse '%s' to int64: %v", c.offsetFlag, err)
-		}
-		offset = o
-	}
-
-	return offset
 }

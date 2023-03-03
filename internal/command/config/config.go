@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/worldbug/kafeman/internal/command"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	configProvider "github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/logger"
 
@@ -31,7 +30,9 @@ type configOptions struct {
 }
 
 // TODO: pointer
-func NewConfigCMD(kafeman *cobra.Command, config configProvider.Config) *cobra.Command {
+func NewConfigCMD(config configProvider.Config) *cobra.Command {
+	// отвязать настройки конфига от это го места
+
 	options := newConfigOptions()
 
 	// if config not inited
@@ -48,12 +49,26 @@ func NewConfigCMD(kafeman *cobra.Command, config configProvider.Config) *cobra.C
 		Short: "Handle kafman configuration",
 	}
 
-	kafeman.AddCommand(cmd)
-	kafeman.PersistentFlags().StringVar(&options.configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
-	kafeman.PersistentFlags().StringVarP(&options.clusterOverride, "cluster", "c", "", "set a temporary current cluster")
-	kafeman.PersistentFlags().BoolVar(&options.failTolerance, "tolerance", false, "don't crash on errors")
-	kafeman.PersistentFlags().BoolVar(&options.quiet, "quiet", false, "do not print info and errors")
-	kafeman.RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion(config))
+	// TODO:
+	configPath := ""
+	// ConfigCMD.AddCommand(configImportCmd)
+	// ConfigCMD.AddCommand(configUseCmd)
+	// ConfigCMD.AddCommand(configLsCmd)
+	// ConfigCMD.AddCommand(configAddClusterCmd)
+	// ConfigCMD.AddCommand(configRemoveClusterCmd)
+	cmd.AddCommand(NewConfigSelectCluster(config, configPath))
+	// TODO: bug NewConfigCurrentContextCMD
+	cmd.AddCommand(NewConfigCurrentContextCMD(config, configPath))
+	// ConfigCMD.AddCommand(configAddEventhub)
+
+	cmd.AddCommand(NewConfigInitCMD(configPath))
+
+	// TODO: монитровать
+	// cmd.Parent().PersistentFlags().StringVar(&options.configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
+	// cmd.Parent().PersistentFlags().StringVarP(&options.clusterOverride, "cluster", "c", "", "set a temporary current cluster")
+	// cmd.Parent().PersistentFlags().BoolVar(&options.failTolerance, "tolerance", false, "don't crash on errors")
+	// cmd.Parent().PersistentFlags().BoolVar(&options.quiet, "quiet", false, "do not print info and errors")
+	// cmd.Parent().RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion(config))
 
 	// TODO: may not work
 	if options.clusterOverride != "" {
@@ -65,7 +80,7 @@ func NewConfigCMD(kafeman *cobra.Command, config configProvider.Config) *cobra.C
 	return cmd
 }
 
-func NewConfigCurrentContextCMD(config configProvider.Config) *cobra.Command {
+func NewConfigCurrentContextCMD(config configProvider.Config, configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-context",
 		Short: "Displays the current context",
@@ -75,22 +90,10 @@ func NewConfigCurrentContextCMD(config configProvider.Config) *cobra.Command {
 		},
 	}
 
-	// TODO:
-	// ConfigCMD.AddCommand(configImportCmd)
-	// ConfigCMD.AddCommand(configUseCmd)
-	// ConfigCMD.AddCommand(configLsCmd)
-	// ConfigCMD.AddCommand(configAddClusterCmd)
-	// ConfigCMD.AddCommand(configRemoveClusterCmd)
-	cmd.AddCommand(NewConfigSelectCluster(config))
-	cmd.AddCommand(NewConfigCurrentContextCMD(config))
-	// ConfigCMD.AddCommand(configAddEventhub)
-
-	cmd.AddCommand(NewConfigInitCMD())
-
 	return cmd
 }
 
-func NewConfigSelectCluster(config configProvider.Config) *cobra.Command {
+func NewConfigSelectCluster(config configProvider.Config, configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "select-cluster",
 		Aliases: []string{"ls"},
@@ -139,7 +142,7 @@ func NewConfigSelectCluster(config configProvider.Config) *cobra.Command {
 	return cmd
 }
 
-func NewConfigInitCMD() *cobra.Command {
+func NewConfigInitCMD(configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
 		Short: "Create empty config and export to file (default ~/.kafeman/config.yml)",

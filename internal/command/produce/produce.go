@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
+
+	"github.com/worldbug/kafeman/internal/command"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
@@ -11,89 +14,85 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	keyFlag         string
-	partitionerFlag string
-	partitionFlag   int32
-	timestampFlag   string
-	bufferSizeFlag  int
-)
+func NewProduceExampleCMD(config config.Config) *cobra.Command {
+	options := newProduceOptions(config)
 
-func init() {
-	RootCMD.AddCommand(ProduceCMD)
-	RootCMD.AddCommand(ProduceExample)
-
-	ProduceCMD.Flags().StringVarP(&keyFlag, "key", "k", "", "Key for the record. Currently only strings are supported.")
-	ProduceCMD.Flags().StringVar(&encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
-	ProduceCMD.RegisterFlagCompletionFunc("force-encoding", encodingCompletion)
-	ProduceCMD.Flags().StringVar(&partitionerFlag, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")
-	ProduceCMD.RegisterFlagCompletionFunc("partitioner", partitionerCompletion)
-	ProduceCMD.Flags().StringVar(&timestampFlag, "timestamp", "", "Select timestamp for record")
-	ProduceCMD.Flags().Int32VarP(&partitionFlag, "partition", "p", -1, "Partition to produce to")
-	ProduceCMD.Flags().IntVarP(&bufferSizeFlag, "line-length-limit", "", 0, "line length limit in line input mode")
-}
-
-var ProduceExample = &cobra.Command{
-	Use:               "example",
-	Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
-	Example:           "kafeman example topic_name",
-	Args:              cobra.ExactArgs(1),
-	ValidArgsFunction: topicCompletion,
-	PreRun:            setupProtoDescriptorRegistry,
-	Run: func(cmd *cobra.Command, args []string) {
-		topic := conf.Topics[args[0]]
-		// TODO: add other encoders support
-		decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
-		if err != nil {
-			errorExit("%+v", err)
-		}
-		example := decoder.GetExample(topic.ProtoType)
-		// TODO: сделать заполнение семпла базовыми данными
-		fmt.Fprintf(os.Stdout, "%+v", example)
-	},
-}
-
-func NewProduceCMD() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "produce",
-		Short:             "Produce record. Reads data from stdin.",
-		Example:           "kafeman produce topic_name",
+		Use:               "example",
+		Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
+		Example:           "kafeman example topic_name",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: topicCompletion,
-		PreRun:            setupProtoDescriptorRegistry,
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		PreRun:            options.setupProtoDescriptorRegistry,
 		Run: func(cmd *cobra.Command, args []string) {
-			k := kafeman.Newkafeman(conf)
-
-			command := kafeman.ProduceCommand{
-				Topic:       args[0],
-				BufferSize:  bufferSizeFlag,
-				Input:       os.Stdin,
-				Output:      os.Stdout,
-				Partition:   partitionFlag,
-				Partitioner: partitionerFlag,
-			}
-
-			encoder, err := getEncoder(command)
+			topic := config.Topics[args[0]]
+			// TODO: add other encoders support
+			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 			if err != nil {
-				errorExit("%+v", err)
+				command.ExitWithErr("%+v", err)
 			}
-
-			k.Produce(cmd.Context(), command, encoder)
+			example := decoder.GetExample(topic.ProtoType)
+			// TODO: сделать заполнение семпла базовыми данными
+			fmt.Fprintf(os.Stdout, "%+v", example)
 		},
 	}
 
 	return cmd
 }
 
-func getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
-	topicConfig, ok := conf.Topics[cmd.Topic]
-	if !ok && encoding == "" {
+func newProduceOptions(config config.Config) *produceOptions {
+	return &produceOptions{
+		config: config,
+	}
+}
+
+type produceOptions struct {
+	config config.Config
+
+	key         string
+	partitioner string
+	partition   int32
+	timestamp   string
+	bufferSize  int
+
+	encoding string
+
+	// TODO: refactor
+	protoFiles    []string
+	protoExclude  []string
+	protoType     string
+	protoRegistry *serializers.DescriptorRegistry
+}
+
+func (p *produceOptions) run(cmd *cobra.Command, args []string) {
+	k := kafeman.Newkafeman(p.config)
+
+	produceCommand := kafeman.ProduceCommand{
+		Topic:       args[0],
+		BufferSize:  p.bufferSize,
+		Input:       os.Stdin,
+		Output:      os.Stdout,
+		Partition:   p.partition,
+		Partitioner: p.partitioner,
+	}
+
+	encoder, err := p.getEncoder(produceCommand)
+	if err != nil {
+		command.ExitWithErr("%+v", err)
+	}
+
+	k.Produce(cmd.Context(), produceCommand, encoder)
+}
+
+func (p *produceOptions) getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
+	topicConfig, ok := p.config.Topics[cmd.Topic]
+	if !ok && p.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}
 
 	// override encoding
-	if encoding != "" {
-		topicConfig.Encoding = config.Encoding(encoding)
+	if p.encoding != "" {
+		topicConfig.Encoding = config.Encoding(p.encoding)
 	}
 
 	// force type
@@ -122,4 +121,40 @@ func getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
 
 	// RAW DECODER
 	return serializers.NewRawSerializer(), nil
+}
+
+func (p *produceOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args []string) {
+	if p.protoType != "" {
+		r, err := serializers.NewDescriptorRegistry(p.protoFiles, p.protoExclude)
+		if err != nil {
+			command.ExitWithErr("Failed to load protobuf files: %v\n", err)
+		}
+
+		p.protoRegistry = r
+	}
+}
+
+func NewProduceCMD(config config.Config) *cobra.Command {
+	options := newProduceOptions(config)
+
+	cmd := &cobra.Command{
+		Use:               "produce",
+		Short:             "Produce record. Reads data from stdin.",
+		Example:           "kafeman produce topic_name",
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		PreRun:            options.setupProtoDescriptorRegistry,
+		Run:               options.run,
+	}
+
+	cmd.Flags().StringVarP(&options.key, "key", "k", "", "Key for the record. Currently only strings are supported.")
+	cmd.Flags().StringVar(&options.encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
+	cmd.RegisterFlagCompletionFunc("force-encoding", completion_cmd.NewEncodingCompletion())
+	cmd.Flags().StringVar(&options.partitioner, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")
+	cmd.RegisterFlagCompletionFunc("partitioner", completion_cmd.NewPartitionerCompletion())
+	cmd.Flags().StringVar(&options.timestamp, "timestamp", "", "Select timestamp for record")
+	cmd.Flags().Int32VarP(&options.partition, "partition", "p", -1, "Partition to produce to")
+	cmd.Flags().IntVarP(&options.bufferSize, "line-length-limit", "", 0, "line length limit in line input mode")
+
+	return cmd
 }
