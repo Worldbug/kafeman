@@ -3,11 +3,14 @@ package topic_cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
 	"text/tabwriter"
 
+	"github.com/worldbug/kafeman/internal/command"
+	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
@@ -60,48 +63,59 @@ func NewTopicCMD() *cobra.Command {
 	return cmd
 }
 
-func newTabWriter() *tabwriter.Writer {
-	return tabwriter.NewWriter(
-		outWriter, tabwriterMinWidth, tabwriterWidth,
-		tabwriterPadding, tabwriterPadChar, tabwriterFlags,
-	)
+func newDescribeOptions(config config.Config) *describeOptions {
+	return &describeOptions{
+		config:           config,
+		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+	}
 }
 
 func NewDescribeCMD(config config.Config) *cobra.Command {
+	options := newDescribeOptions(config)
+
 	cmd := &cobra.Command{
 		Use:               "describe",
 		Short:             "Describe topic info",
-		ValidArgsFunction: topicCompletion,
-		Run: func(cmd *cobra.Command, args []string) {
-			k := kafeman.Newkafeman(config)
-			topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
-			if err != nil {
-				errorExit("%+v", err)
-			}
-
-			if asJsonFlag {
-				describeTopicPrintJson(topicInfo)
-				return
-			}
-
-			describeTopicPrint(topicInfo)
-		},
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		Run:               options.run,
 	}
 
 	return cmd
 }
 
-func describeTopicPrintJson(topicInfo models.TopicInfo) {
+type describeOptions struct {
+	config config.Config
+	command.PrettyPrintFlags
+	out    io.Writer
+	asJson bool
+}
+
+func (d *describeOptions) run(cmd *cobra.Command, args []string) {
+	k := kafeman.Newkafeman(d.config)
+	topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
+	if err != nil {
+		command.ExitWithErr("%+v", err)
+	}
+
+	if d.asJson {
+		d.describeTopicPrintJson(topicInfo)
+		return
+	}
+
+	d.describeTopicPrint(topicInfo)
+}
+
+func (d *describeOptions) describeTopicPrintJson(topicInfo models.TopicInfo) {
 	raw, err := json.Marshal(topicInfo)
 	if err != nil {
 		return
 	}
 
-	fmt.Fprintln(outWriter, string(raw))
+	fmt.Fprintln(d.out, string(raw))
 }
 
-func describeTopicPrint(topicInfo models.TopicInfo) {
-	w := newTabWriter()
+func (d *describeOptions) describeTopicPrint(topicInfo models.TopicInfo) {
+	w := tabwriter.NewWriter(d.out, d.MinWidth, d.Width, d.Padding, d.PadChar, d.Flags)
 	defer w.Flush()
 
 	fmt.Fprintf(w, "Topic:\t%s\n", topicInfo.TopicName)
@@ -144,28 +158,46 @@ func NewTopicsCMD() *cobra.Command {
 	return cmd
 }
 
-var LsTopicsCMD = &cobra.Command{
-	Use:     "ls",
-	Aliases: []string{"list"},
-	Short:   "List topics",
-	Args:    cobra.ExactArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-		k := kafeman.Newkafeman(conf)
-		topics, err := k.ListTopics(cmd.Context())
-		if err != nil {
-			errorExit("%+v", err)
-		}
+func NewLSTopicsCMD(config config.Config) *cobra.Command {
+	options := newLSTopicsOptions(config)
+	cmd := &cobra.Command{
+		Use:     "ls",
+		Aliases: []string{"list"},
+		Short:   "List topics",
+		Args:    cobra.ExactArgs(0),
+		Run:     options.run,
+	}
 
-		if asJsonFlag {
-			printJson(topics)
-			return
-		}
-
-		lsTopicsPrint(topics)
-	},
+	return cmd
 }
 
-func lsTopicsPrint(topics []models.Topic) {
+func newLSTopicsOptions(config config.Config) *lsTopicsOption {
+	return &lsTopicsOption{
+		config: config,
+	}
+}
+
+type lsTopicsOption struct {
+	config config.Config
+}
+
+func (l *lsTopicsOption) run(cmd *cobra.Command, args []string) {
+	k := kafeman.Newkafeman(l.config)
+
+	topics, err := k.ListTopics(cmd.Context())
+	if err != nil {
+		command.ExitWithErr("%+v", err)
+	}
+
+	if l.asJson {
+		command.PrintJson(topics)
+		return
+	}
+
+	l.lsTopicsPrint(topics)
+}
+
+func (l *lsTopicsOption) lsTopicsPrint(topics []models.Topic) {
 	w := newTabWriter()
 
 	if !noHeaderFlag {

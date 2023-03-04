@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/worldbug/kafeman/internal/command"
+	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	configProvider "github.com/worldbug/kafeman/internal/config"
+
 	"github.com/worldbug/kafeman/internal/logger"
 
 	"github.com/manifoldco/promptui"
@@ -29,8 +31,8 @@ type configOptions struct {
 	quiet           bool
 }
 
-// TODO: pointer
-func NewConfigCMD(config configProvider.Config) *cobra.Command {
+// TODO: refactor
+func NewConfigCMD(kafemanCMD *cobra.Command, config configProvider.Config) *cobra.Command {
 	// отвязать настройки конфига от это го места
 
 	options := newConfigOptions()
@@ -49,6 +51,12 @@ func NewConfigCMD(config configProvider.Config) *cobra.Command {
 		Short: "Handle kafman configuration",
 	}
 
+	kafemanCMD.PersistentFlags().StringVar(&options.configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
+	kafemanCMD.PersistentFlags().StringVarP(&options.clusterOverride, "cluster", "c", "", "set a temporary current cluster")
+	kafemanCMD.PersistentFlags().BoolVar(&options.failTolerance, "tolerance", false, "don't crash on errors")
+	kafemanCMD.PersistentFlags().BoolVar(&options.quiet, "quiet", false, "do not print info and errors")
+	kafemanCMD.RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion(config))
+
 	// TODO:
 	configPath := ""
 	// ConfigCMD.AddCommand(configImportCmd)
@@ -62,13 +70,6 @@ func NewConfigCMD(config configProvider.Config) *cobra.Command {
 	// ConfigCMD.AddCommand(configAddEventhub)
 
 	cmd.AddCommand(NewConfigInitCMD(configPath))
-
-	// TODO: монитровать
-	// cmd.Parent().PersistentFlags().StringVar(&options.configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
-	// cmd.Parent().PersistentFlags().StringVarP(&options.clusterOverride, "cluster", "c", "", "set a temporary current cluster")
-	// cmd.Parent().PersistentFlags().BoolVar(&options.failTolerance, "tolerance", false, "don't crash on errors")
-	// cmd.Parent().PersistentFlags().BoolVar(&options.quiet, "quiet", false, "do not print info and errors")
-	// cmd.Parent().RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion(config))
 
 	// TODO: may not work
 	if options.clusterOverride != "" {
