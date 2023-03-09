@@ -8,6 +8,8 @@ import (
 	group_cmd "github.com/worldbug/kafeman/internal/command/group"
 	kafeman_cmd "github.com/worldbug/kafeman/internal/command/kafeman"
 	produce_cmd "github.com/worldbug/kafeman/internal/command/produce"
+	replicate_cmd "github.com/worldbug/kafeman/internal/command/replicate"
+	topic_cmd "github.com/worldbug/kafeman/internal/command/topic"
 
 	"github.com/worldbug/kafeman/internal/config"
 
@@ -32,9 +34,9 @@ func App() *cobra.Command {
 	kafeman.AddCommand(group_cmd.NewGroupsCMD(config))
 	kafeman.AddCommand(produce_cmd.NewProduceCMD(config))
 	kafeman.AddCommand(produce_cmd.NewProduceExampleCMD(config))
-	// kafeman.AddCommand(replicate_cmd.NewReplicateCMD(config))
-	// kafeman.AddCommand(topic_cmd.NewTopicCMD())
-	// kafeman.AddCommand(topic_cmd.NewTopicsCMD())
+	kafeman.AddCommand(topic_cmd.NewTopicCMD(config))
+	kafeman.AddCommand(topic_cmd.NewTopicsCMD(config))
+	kafeman.AddCommand(replicate_cmd.NewReplicateCMD(config))
 
 	return kafeman
 }

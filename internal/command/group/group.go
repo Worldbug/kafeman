@@ -145,6 +145,7 @@ func NewGroupLSCMD(config *config.Config) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&options.asJson, "json", false, "Print data as json")
+	cmd.Flags().BoolVar(&options.NoHeader, "no-headers", false, "Hide table headers")
 
 	return cmd
 }
@@ -242,6 +243,7 @@ func NewGroupDescribeCMD(config *config.Config) *cobra.Command {
 
 	cmd.Flags().BoolVar(&options.asJson, "json", false, "Print data as json")
 	cmd.Flags().BoolVar(&options.printAll, "full", false, "Print completed info")
+	cmd.Flags().BoolVar(&options.NoHeader, "no-headers", false, "Hide table headers")
 
 	return cmd
 }

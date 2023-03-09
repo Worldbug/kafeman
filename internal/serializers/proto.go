@@ -92,6 +92,16 @@ type DescriptorRegistry struct {
 }
 
 func NewDescriptorRegistry(importPaths []string, exclusions []string) (*DescriptorRegistry, error) {
+	// TODO: os depend abs path
+	for i, path := range importPaths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+
+		importPaths[i] = absPath
+	}
+
 	p := &protoparse.Parser{
 		ImportPaths: importPaths,
 	}
