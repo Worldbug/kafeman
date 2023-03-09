@@ -15,7 +15,7 @@ import (
 )
 
 func NewSaramaConsuemr(
-	config config.Config,
+	config *config.Config,
 	consumerGroupID string,
 	topic string,
 	partitions []int32,
@@ -39,7 +39,7 @@ func NewSaramaConsuemr(
 }
 
 type Consumer struct {
-	config   config.Config
+	config   *config.Config
 	messages chan models.Message
 
 	consumerGroupID string

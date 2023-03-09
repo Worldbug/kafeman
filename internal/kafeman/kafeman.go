@@ -25,7 +25,7 @@ type Decoder interface {
 }
 
 func Newkafeman(
-	config config.Config,
+	config *config.Config,
 ) *kafeman {
 
 	return &kafeman{
@@ -36,7 +36,7 @@ func Newkafeman(
 }
 
 type kafeman struct {
-	config config.Config
+	config *config.Config
 
 	outWriter io.Writer
 	errWriter io.Writer

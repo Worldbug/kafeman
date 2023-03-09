@@ -13,14 +13,14 @@ import (
 	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
-func NewAdmin(config config.Config) *Admin {
+func NewAdmin(config *config.Config) *Admin {
 	return &Admin{
 		config: config,
 	}
 }
 
 type Admin struct {
-	config config.Config
+	config *config.Config
 }
 
 func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic string, ts time.Time) int64 {

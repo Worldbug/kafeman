@@ -11,14 +11,14 @@ import (
 	"github.com/worldbug/kafeman/internal/serializers"
 )
 
-func newReplicateOptions(config config.Config) *replicateOptions {
+func newReplicateOptions(config *config.Config) *replicateOptions {
 	return &replicateOptions{
 		config: config,
 	}
 }
 
 type replicateOptions struct {
-	config config.Config
+	config *config.Config
 
 	// TODO: refactor
 	protoFiles    []string
@@ -76,7 +76,7 @@ func (r *replicateOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args
 }
 
 // kafeman replicate prod/events local/events
-func NewReplicateCMD(config config.Config) *cobra.Command {
+func NewReplicateCMD(config *config.Config) *cobra.Command {
 	options := newReplicateOptions(config)
 
 	cmd := &cobra.Command{

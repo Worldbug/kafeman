@@ -24,9 +24,9 @@ func App() *cobra.Command {
 	}
 
 	kafeman := kafeman_cmd.NewKafemanCMD(config)
+	kafeman.AddCommand(config_cmd.NewConfigCMD(kafeman, config))
 
 	kafeman.AddCommand(completion_cmd.NewCompletion(kafeman))
-	kafeman.AddCommand(config_cmd.NewConfigCMD(kafeman, config))
 	kafeman.AddCommand(consume_cmd.NewConsumeCMD(config))
 	kafeman.AddCommand(group_cmd.NewGroupCMD(config))
 	kafeman.AddCommand(group_cmd.NewGroupsCMD(config))

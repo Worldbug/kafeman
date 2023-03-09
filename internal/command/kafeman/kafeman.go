@@ -19,7 +19,7 @@ var (
 	version string = "latest"
 )
 
-func NewKafemanCMD(config config.Config) *cobra.Command {
+func NewKafemanCMD(config *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:     "kafeman",
 		Short:   "Kafka Command Line utility",

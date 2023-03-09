@@ -33,8 +33,8 @@ func (c *Config) SetCurrentCluster(name string) {
 	c.CurrentCluster = name
 }
 
-func GenerateConfig() Config {
-	return Config{
+func GenerateConfig() *Config {
+	return &Config{
 		CurrentCluster: "prod",
 		Clusters: Clusters{
 			Cluster{
@@ -58,8 +58,8 @@ func GenerateConfig() Config {
 	}
 }
 
-func LoadConfig(configPath string) (Config, error) {
-	cfg := Config{}
+func LoadConfig(configPath string) (*Config, error) {
+	cfg := &Config{}
 
 	path := valueOrDefault(configPath, getDefaultConfigPath())
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
@@ -78,7 +78,7 @@ func ExportConfig(path string) error {
 	return SaveConfig(c, path)
 }
 
-func SaveConfig(config Config, path string) error {
+func SaveConfig(config *Config, path string) error {
 	if path == "" {
 		home, err := homedir.Dir()
 		if err != nil {

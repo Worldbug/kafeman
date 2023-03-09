@@ -24,6 +24,7 @@ func newConfigOptions() configOptions {
 	}
 }
 
+// TODO:
 type configOptions struct {
 	configPath      string
 	clusterOverride string
@@ -32,7 +33,7 @@ type configOptions struct {
 }
 
 // TODO: refactor
-func NewConfigCMD(kafemanCMD *cobra.Command, config configProvider.Config) *cobra.Command {
+func NewConfigCMD(kafemanCMD *cobra.Command, config *configProvider.Config) *cobra.Command {
 	// отвязать настройки конфига от это го места
 
 	options := newConfigOptions()
@@ -81,7 +82,7 @@ func NewConfigCMD(kafemanCMD *cobra.Command, config configProvider.Config) *cobr
 	return cmd
 }
 
-func NewConfigCurrentContextCMD(config configProvider.Config, configPath string) *cobra.Command {
+func NewConfigCurrentContextCMD(config *configProvider.Config, configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-context",
 		Short: "Displays the current context",
@@ -94,7 +95,7 @@ func NewConfigCurrentContextCMD(config configProvider.Config, configPath string)
 	return cmd
 }
 
-func NewConfigSelectCluster(config configProvider.Config, configPath string) *cobra.Command {
+func NewConfigSelectCluster(config *configProvider.Config, configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "select-cluster",
 		Aliases: []string{"ls"},

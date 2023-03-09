@@ -63,14 +63,14 @@ func NewTopicCMD() *cobra.Command {
 	return cmd
 }
 
-func newDescribeOptions(config config.Config) *describeOptions {
+func newDescribeOptions(config *config.Config) *describeOptions {
 	return &describeOptions{
 		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 	}
 }
 
-func NewDescribeCMD(config config.Config) *cobra.Command {
+func NewDescribeCMD(config *config.Config) *cobra.Command {
 	options := newDescribeOptions(config)
 
 	cmd := &cobra.Command{
@@ -84,7 +84,7 @@ func NewDescribeCMD(config config.Config) *cobra.Command {
 }
 
 type describeOptions struct {
-	config config.Config
+	config *config.Config
 	command.PrettyPrintFlags
 	out    io.Writer
 	asJson bool
@@ -158,7 +158,7 @@ func NewTopicsCMD() *cobra.Command {
 	return cmd
 }
 
-func NewLSTopicsCMD(config config.Config) *cobra.Command {
+func NewLSTopicsCMD(config *config.Config) *cobra.Command {
 	options := newLSTopicsOptions(config)
 	cmd := &cobra.Command{
 		Use:     "ls",
@@ -171,14 +171,14 @@ func NewLSTopicsCMD(config config.Config) *cobra.Command {
 	return cmd
 }
 
-func newLSTopicsOptions(config config.Config) *lsTopicsOption {
+func newLSTopicsOptions(config *config.Config) *lsTopicsOption {
 	return &lsTopicsOption{
 		config: config,
 	}
 }
 
 type lsTopicsOption struct {
-	config config.Config
+	config *config.Config
 }
 
 func (l *lsTopicsOption) run(cmd *cobra.Command, args []string) {

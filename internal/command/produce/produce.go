@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewProduceExampleCMD(config config.Config) *cobra.Command {
+func NewProduceExampleCMD(config *config.Config) *cobra.Command {
 	options := newProduceOptions(config)
 
 	cmd := &cobra.Command{
@@ -40,14 +40,14 @@ func NewProduceExampleCMD(config config.Config) *cobra.Command {
 	return cmd
 }
 
-func newProduceOptions(config config.Config) *produceOptions {
+func newProduceOptions(config *config.Config) *produceOptions {
 	return &produceOptions{
 		config: config,
 	}
 }
 
 type produceOptions struct {
-	config config.Config
+	config *config.Config
 
 	key         string
 	partitioner string
@@ -134,7 +134,7 @@ func (p *produceOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args [
 	}
 }
 
-func NewProduceCMD(config config.Config) *cobra.Command {
+func NewProduceCMD(config *config.Config) *cobra.Command {
 	options := newProduceOptions(config)
 
 	cmd := &cobra.Command{

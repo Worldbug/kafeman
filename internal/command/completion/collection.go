@@ -10,7 +10,7 @@ import (
 	"github.com/worldbug/kafeman/internal/serializers"
 )
 
-func NewClusterCompletion(config config.Config) completionFunc {
+func NewClusterCompletion(config *config.Config) completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
 		clusters := make([]string, 0, len(config.Clusters))
@@ -30,7 +30,7 @@ func NewEncodingCompletion() completionFunc {
 	}
 }
 
-func NewGroupCompletion(config config.Config) completionFunc {
+func NewGroupCompletion(config *config.Config) completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
 		list, _ := kafeman.Newkafeman(config).GetGroupsList(cmd.Context())
@@ -65,7 +65,7 @@ func NewTimeCompletion() completionFunc {
 	}
 }
 
-func NewTopicCompletion(config config.Config) completionFunc {
+func NewTopicCompletion(config *config.Config) completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
 		topicsSuggest := make([]string, 0)
@@ -84,7 +84,7 @@ func NewTopicCompletion(config config.Config) completionFunc {
 }
 
 // TODO: refactor
-func NewReplicationCompletion(config config.Config) completionFunc {
+func NewReplicationCompletion(config *config.Config) completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
 		suggest := make([]string, 0)

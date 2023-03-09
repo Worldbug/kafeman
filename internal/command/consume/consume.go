@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewConsumeCMD(config config.Config) *cobra.Command {
+func NewConsumeCMD(config *config.Config) *cobra.Command {
 	options := newConsumeOptions(config)
 
 	cmd := &cobra.Command{
@@ -48,13 +48,13 @@ func NewConsumeCMD(config config.Config) *cobra.Command {
 	return cmd
 }
 
-func newConsumeCMD(config config.Config) *consumeOptions {
+func newConsumeCMD(config *config.Config) *consumeOptions {
 	return &consumeOptions{
 		config: config,
 	}
 }
 
-func newConsumeOptions(config config.Config) *consumeOptions {
+func newConsumeOptions(config *config.Config) *consumeOptions {
 	return &consumeOptions{
 		config: config,
 		out:    os.Stdout,
@@ -62,7 +62,7 @@ func newConsumeOptions(config config.Config) *consumeOptions {
 }
 
 type consumeOptions struct {
-	config config.Config
+	config *config.Config
 
 	offset        string
 	groupID       string

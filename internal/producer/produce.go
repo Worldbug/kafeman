@@ -17,7 +17,7 @@ type Message struct {
 }
 
 func NewProducer(
-	config config.Config,
+	config *config.Config,
 	partitioner string,
 	partition int32,
 	input <-chan Message,
@@ -44,7 +44,7 @@ func NewProducer(
 }
 
 type Producer struct {
-	config   config.Config
+	config   *config.Config
 	input    <-chan Message
 	producer sarama.SyncProducer
 
@@ -80,7 +80,7 @@ func (p *Producer) Produce(topic string, wg *sync.WaitGroup) {
 }
 
 func getSaramaConfig(
-	conf config.Config,
+	conf *config.Config,
 	partitioner string,
 	partition int32,
 ) (*sarama.Config, error) {
