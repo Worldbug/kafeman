@@ -5,7 +5,6 @@ go 1.18
 require (
 	github.com/Landoop/schema-registry v0.0.0-20190327143759-50a5701c1891
 	github.com/Shopify/sarama v1.37.2
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.2
 	github.com/jhump/protoreflect v1.14.0
 	github.com/linkedin/goavro/v2 v2.12.0
@@ -18,7 +17,6 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	github.com/xdg-go/scram v1.1.1
 	golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be
-	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -57,4 +55,5 @@ require (
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20221114212237-e4508ebdbee1 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 )
