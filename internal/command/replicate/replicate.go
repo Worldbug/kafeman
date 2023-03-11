@@ -26,16 +26,16 @@ type replicateOptions struct {
 	protoType     string
 	protoRegistry *serializers.DescriptorRegistry
 
-	offset        string
-	groupID       string
-	partition     int32
-	partitions    []int32
-	partitioner   string
-	follow        bool
-	commit        bool
-	printMeta     bool
-	fromAt        string
-	messagesCount int32
+	offset            string
+	groupID           string
+	partition         int32
+	consumePartitions []int32
+	partitioner       string
+	follow            bool
+	commit            bool
+	printMeta         bool
+	fromAt            string
+	messagesCount     int32
 
 	encoding string
 }
@@ -47,20 +47,20 @@ func (r *replicateOptions) run(cmd *cobra.Command, args []string) {
 
 	k := kafeman.Newkafeman(r.config)
 	k.Replicate(cmd.Context(), kafeman.ReplicateCMD{
-		SourceTopic:    source[1],
-		SourceBroker:   source[0],
-		DestTopic:      dest[1],
-		DestBroker:     dest[0],
-		Partition:      r.partition,
-		Partitioner:    r.partitioner,
-		ConsumerGroup:  r.groupID,
-		Partitions:     r.partitions,
-		Offset:         offset,
-		CommitMessages: r.commit,
-		Follow:         r.follow,
-		WithMeta:       r.printMeta,
-		MessagesCount:  r.messagesCount,
-		FromTime:       command.ParseTime(r.fromAt),
+		SourceTopic:       source[1],
+		SourceBroker:      source[0],
+		DestTopic:         dest[1],
+		DestBroker:        dest[0],
+		Partition:         r.partition,
+		Partitioner:       r.partitioner,
+		ConsumerGroup:     r.groupID,
+		ConsumePartitions: r.consumePartitions,
+		Offset:            offset,
+		CommitMessages:    r.commit,
+		Follow:            r.follow,
+		WithMeta:          r.printMeta,
+		MessagesCount:     r.messagesCount,
+		FromTime:          command.ParseTime(r.fromAt),
 	})
 
 }
@@ -98,7 +98,7 @@ func NewReplicateCMD(config *config.Config) *cobra.Command {
 	cmd.Flags().BoolVarP(&options.follow, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	cmd.Flags().BoolVar(&options.commit, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
 	cmd.Flags().BoolVar(&options.printMeta, "meta", false, "Print with meta info (marshal into json)")
-	cmd.Flags().Int32SliceVarP(&options.partitions, "consume-partitions", "p", []int32{}, "Partitions to consume")
+	cmd.Flags().Int32SliceVarP(&options.consumePartitions, "consume-partitions", "p", []int32{}, "Partitions to consume")
 	cmd.Flags().Int32VarP(&options.messagesCount, "tail", "n", 0, "Print last n messages per partition")
 	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
