@@ -26,6 +26,7 @@ type ReplicateCMD struct {
 	WithMeta          bool
 	MessagesCount     int32
 	FromTime          time.Time
+	ToTime            time.Time
 	ConsumerGroup     string
 }
 
@@ -66,6 +67,7 @@ func (k *kafeman) initReplicateConsumer(ctx context.Context, cmd ReplicateCMD) (
 		cmd.CommitMessages,
 		cmd.Follow,
 		cmd.FromTime,
+		cmd.ToTime,
 	)
 
 	messages, err := c.StartConsume(ctx)

@@ -24,6 +24,7 @@ func NewSaramaConsuemr(
 	commit bool,
 	follow bool,
 	fromTime time.Time,
+	toTime time.Time,
 ) *Consumer {
 	return &Consumer{
 		config:          config,
@@ -35,6 +36,7 @@ func NewSaramaConsuemr(
 		commit:          commit,
 		follow:          follow,
 		fromTime:        fromTime,
+		toTime:          toTime,
 	}
 }
 
@@ -50,6 +52,7 @@ type Consumer struct {
 	commit          bool
 	follow          bool
 	fromTime        time.Time
+	toTime          time.Time
 }
 
 func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, error) {
@@ -123,6 +126,10 @@ func (c *Consumer) asyncConsume(ctx context.Context, cp sarama.PartitionConsumer
 			return nil
 		case msg, ok := <-cp.Messages():
 			if !ok {
+				return nil
+			}
+
+			if c.toTime.UnixNano() != 0 && c.toTime.Before(msg.Timestamp) {
 				return nil
 			}
 
@@ -216,6 +223,10 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		case msg, ok := <-claim.Messages():
 			if !ok {
 				continue
+			}
+
+			if c.toTime.UnixNano() != 0 && c.toTime.Before(msg.Timestamp) {
+				return nil
 			}
 
 			c.messages <- models.MessageFromSarama(msg)

@@ -43,6 +43,7 @@ func NewConsumeCMD(config *config.Config) *cobra.Command {
 	cmd.Flags().Int32SliceVarP(&options.partitions, "partitions", "p", []int32{}, "Partitions to consume")
 	cmd.Flags().Int32VarP(&options.messagesCount, "tail", "n", 0, "Print last n messages per partition")
 	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
+	cmd.Flags().StringVar(&options.toAt, "to", "", "Consume messages until the specified time (format 2022-10-30T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
 
 	return cmd
@@ -71,6 +72,7 @@ type consumeOptions struct {
 	commit        bool
 	printMeta     bool
 	fromAt        string
+	toAt          string
 	messagesCount int32
 
 	// TODO: refactor
@@ -101,6 +103,7 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 		WithMeta:       c.printMeta,
 		MessagesCount:  c.messagesCount,
 		FromTime:       command.ParseTime(c.fromAt),
+		ToTime:         command.ParseTime(c.toAt),
 	}
 
 	decoder, err := c.getDecoder(command)
