@@ -3,6 +3,7 @@ package serializers
 import (
 	"bytes"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -92,14 +93,23 @@ type DescriptorRegistry struct {
 }
 
 func NewDescriptorRegistry(importPaths []string, exclusions []string) (*DescriptorRegistry, error) {
-	// TODO: os depend abs path
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+
 	for i, path := range importPaths {
-		absPath, err := filepath.Abs(path)
-		if err != nil {
-			return nil, err
+		if path == "~" {
+			path = dir
 		}
 
-		importPaths[i] = absPath
+		if strings.HasPrefix(path, "~/") {
+			path = filepath.Join(dir, path[2:])
+		}
+
+		if strings.HasPrefix(path, "~") {
+			path = filepath.Join(dir, path[1:])
+		}
+
+		importPaths[i] = path
 	}
 
 	p := &protoparse.Parser{
