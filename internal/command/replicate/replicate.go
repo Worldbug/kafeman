@@ -98,14 +98,14 @@ func NewReplicateCMD(config *config.Config) *cobra.Command {
 	cmd.Flags().BoolVarP(&options.follow, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	cmd.Flags().BoolVar(&options.commit, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
 	cmd.Flags().BoolVar(&options.printMeta, "meta", false, "Print with meta info (marshal into json)")
-	cmd.Flags().Int32SliceVarP(&options.partitions, "partitions", "p", []int32{}, "Partitions to consume")
+	cmd.Flags().Int32SliceVarP(&options.partitions, "consume-partitions", "p", []int32{}, "Partitions to consume")
 	cmd.Flags().Int32VarP(&options.messagesCount, "tail", "n", 0, "Print last n messages per partition")
 	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
 
 	cmd.Flags().StringVar(&options.partitioner, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")
 	cmd.RegisterFlagCompletionFunc("partitioner", completion_cmd.NewPartitionerCompletion())
-	cmd.Flags().Int32VarP(&options.partition, "partition", "p", -1, "Partition to produce to")
+	cmd.Flags().Int32Var(&options.partition, "partition", -1, "Partition to produce to")
 
 	return cmd
 }
