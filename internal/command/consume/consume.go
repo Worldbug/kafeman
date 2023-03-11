@@ -45,6 +45,7 @@ func NewConsumeCMD(config *config.Config) *cobra.Command {
 	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
 	cmd.Flags().StringVar(&options.toAt, "to", "", "Consume messages until the specified time (format 2022-10-30T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
+	cmd.RegisterFlagCompletionFunc("to", completion_cmd.NewTimeCompletion())
 
 	return cmd
 }
@@ -93,7 +94,7 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 
 	k := kafeman.Newkafeman(c.config)
 
-	command := kafeman.ConsumeCommand{
+	kafemanCommand := kafeman.ConsumeCommand{
 		Topic:          topic,
 		ConsumerGroup:  c.groupID,
 		Partitions:     c.partitions,
@@ -106,18 +107,14 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 		ToTime:         command.ParseTime(c.toAt),
 	}
 
-	decoder, err := c.getDecoder(command)
+	decoder, err := c.getDecoder(kafemanCommand)
 	if err != nil {
-		// TODO:
-		// errorExit("%+v", err)
-		panic(err)
+		command.ExitWithErr("%+v", err)
 	}
 
-	messages, err := k.Consume(cmd.Context(), command, decoder)
+	messages, err := k.Consume(cmd.Context(), kafemanCommand, decoder)
 	if err != nil {
-		// TODO:
-		// errorExit("%+v", err)
-		panic(err)
+		command.ExitWithErr("%+v", err)
 	}
 
 	for message := range messages {

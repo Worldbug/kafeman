@@ -35,6 +35,7 @@ type replicateOptions struct {
 	commit            bool
 	printMeta         bool
 	fromAt            string
+	toAt              string
 	messagesCount     int32
 
 	encoding string
@@ -61,6 +62,7 @@ func (r *replicateOptions) run(cmd *cobra.Command, args []string) {
 		WithMeta:          r.printMeta,
 		MessagesCount:     r.messagesCount,
 		FromTime:          command.ParseTime(r.fromAt),
+		ToTime:            command.ParseTime(r.toAt),
 	})
 
 }
@@ -102,6 +104,8 @@ func NewReplicateCMD(config *config.Config) *cobra.Command {
 	cmd.Flags().Int32VarP(&options.messagesCount, "tail", "n", 0, "Print last n messages per partition")
 	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
+	cmd.Flags().StringVar(&options.toAt, "to", "", "Consume messages until the specified time (format 2022-10-30T00:00:00)")
+	cmd.RegisterFlagCompletionFunc("to", completion_cmd.NewTimeCompletion())
 
 	cmd.Flags().StringVar(&options.partitioner, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")
 	cmd.RegisterFlagCompletionFunc("partitioner", completion_cmd.NewPartitionerCompletion())
