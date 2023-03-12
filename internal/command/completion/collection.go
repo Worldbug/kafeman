@@ -1,6 +1,7 @@
 package completion_cmd
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -87,10 +88,10 @@ func NewTopicCompletion(config *config.Config) completionFunc {
 func NewReplicationCompletion(config *config.Config) completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
+
 		suggest := make([]string, 0)
 
-		commands := strings.Split(toComplete, "/")
-		if len(commands) == 1 {
+		if firstPart(args, toComplete) {
 			for _, cluster := range config.Clusters {
 				suggest = append(suggest, cluster.Name+"/")
 			}
@@ -98,18 +99,38 @@ func NewReplicationCompletion(config *config.Config) completionFunc {
 			return suggest, cobra.ShellCompDirectiveNoFileComp
 		}
 
-		config.CurrentCluster = strings.TrimRight(toComplete, "/")
-		topics, err := kafeman.Newkafeman(config).ListTopics(cmd.Context())
-		if err != nil {
-			return suggest, cobra.ShellCompDirectiveNoFileComp
-		}
+		if secondPart(args, toComplete) {
+			cluster := strings.Split(toComplete, "/")[0]
+			config.CurrentCluster = cluster
 
-		for _, topic := range topics {
-			// TODO: если строка частично дописана
-			// то не дополняет
-			suggest = append(suggest, toComplete+topic.Name)
+			topics, err := kafeman.Newkafeman(config).ListTopics(cmd.Context())
+			if err != nil {
+				return suggest, cobra.ShellCompDirectiveNoFileComp
+			}
+
+			for _, topic := range topics {
+				suggest = append(suggest, fmt.Sprint(cluster+"/"+topic.Name))
+			}
+
+			return suggest, cobra.ShellCompDirectiveNoFileComp
 		}
 
 		return suggest, cobra.ShellCompDirectiveNoFileComp
 	}
+}
+
+func firstPart(args []string, toComplete string) bool {
+	if !strings.Contains(toComplete, "/") {
+		return true
+	}
+
+	return false
+}
+
+func secondPart(args []string, toComplete string) bool {
+	if strings.Contains(toComplete, "/") {
+		return true
+	}
+
+	return false
 }
