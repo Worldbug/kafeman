@@ -42,6 +42,7 @@ func NewTopicCMD(config *config.Config) *cobra.Command {
 
 func newDescribeOptions(config *config.Config) *describeOptions {
 	return &describeOptions{
+		out:              os.Stdout,
 		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 	}
