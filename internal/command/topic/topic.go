@@ -19,9 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func init() {
-}
-
 func NewTopicCMD(config *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "topic",
