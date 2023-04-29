@@ -5,30 +5,25 @@ import (
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
 func init() {
-	// TODO: refactor
-	cfg, err := LoadConfig(getDefaultConfigPath())
-	if err != nil {
-		panic(err)
-	}
-
-	Config = cfg
+	Config = LoadConfig()
 }
 
 var Config *Configuration
 
 const (
-	defaultConfigDir  = `/.config/kafeman`
+	defaultConfigDir  = `.config/kafeman`
 	defaultConfigName = "config.yml"
 )
 
 type Configuration struct {
-	CurrentCluster string           `yaml:"current_cluster"`
-	Clusters       Clusters         `yaml:"clusters"`
-	Topics         map[string]Topic `yaml:"topics"`
+	CurrentCluster string           `mapstructure:"current_cluster"`
+	Clusters       Clusters         `mapstructure:"clusters"`
+	Topics         map[string]Topic `mapstructure:"topics"`
 	Quiet          bool
 	FailTolerance  bool
 }
@@ -72,18 +67,21 @@ func GenerateConfig() *Configuration {
 	}
 }
 
-func LoadConfig(configPath string) (*Configuration, error) {
-	config := &Configuration{}
-	path := valueOrDefault(configPath, getDefaultConfigPath())
-	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
+func LoadConfig() *Configuration {
+	viper.SetConfigFile(getDefaultConfigPath())
+	err := viper.ReadInConfig()
 	if err != nil {
-		return config, err
+		return &Configuration{}
 	}
 
-	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(config)
+	config := &Configuration{}
 
-	return config, err
+	err = viper.Unmarshal(config)
+	if err != nil {
+		panic(err)
+	}
+
+	return config
 }
 
 func ExportConfig(path string) error {
@@ -115,14 +113,6 @@ func SaveConfig(config *Configuration, path string) error {
 
 	encoder := yaml.NewEncoder(file)
 	return encoder.Encode(&config)
-}
-
-func valueOrDefault(val, def string) string {
-	if val != "" {
-		return val
-	}
-
-	return def
 }
 
 func getDefaultConfigPath() string {
