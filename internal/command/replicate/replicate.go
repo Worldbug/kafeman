@@ -78,15 +78,15 @@ func (r *replicateOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args
 }
 
 // kafeman replicate prod/events local/events
-func NewReplicateCMD(config *config.Configuration) *cobra.Command {
-	options := newReplicateOptions(config)
+func NewReplicateCMD() *cobra.Command {
+	options := newReplicateOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "replicate [source] [dest]",
 		Short:             "Replicate messages from source topic to destination topic",
 		Example:           "kafeman replicate prod_cluster/topic_name local_cluster/topic_name",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: completion_cmd.NewReplicationCompletion(config),
+		ValidArgsFunction: completion_cmd.NewReplicationCompletion(),
 		PreRun:            options.setupProtoDescriptorRegistry,
 		Run:               options.run,
 	}
@@ -96,7 +96,7 @@ func NewReplicateCMD(config *config.Configuration) *cobra.Command {
 	cmd.Flags().StringVar(&options.encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
 	cmd.RegisterFlagCompletionFunc("force-encoding", completion_cmd.NewEncodingCompletion())
 	cmd.Flags().StringVarP(&options.groupID, "group", "g", "", "Consumer Group ID to use for consume")
-	cmd.RegisterFlagCompletionFunc("group", completion_cmd.NewGroupCompletion(config))
+	cmd.RegisterFlagCompletionFunc("group", completion_cmd.NewGroupCompletion())
 	cmd.Flags().BoolVarP(&options.follow, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	cmd.Flags().BoolVar(&options.commit, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
 	cmd.Flags().BoolVar(&options.printMeta, "meta", false, "Print with meta info (marshal into json)")

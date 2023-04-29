@@ -16,22 +16,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewGroupCMD(config *config.Configuration) *cobra.Command {
+func NewGroupCMD() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "group",
 		Short: "Display information about consumer groups.",
 	}
 
-	cmd.AddCommand(NewGroupLSCMD(config))
-	cmd.AddCommand(NewGroupDescribeCMD(config))
-	cmd.AddCommand(NewGroupDeleteCMD(config))
-	cmd.AddCommand(NewGroupCommitCMD(config))
+	cmd.AddCommand(NewGroupLSCMD())
+	cmd.AddCommand(NewGroupDescribeCMD())
+	cmd.AddCommand(NewGroupDeleteCMD())
+	cmd.AddCommand(NewGroupCommitCMD())
 
 	return cmd
 }
 
-func NewGroupsCMD(config *config.Configuration) *cobra.Command {
-	groups := NewGroupLSCMD(config)
+func NewGroupsCMD() *cobra.Command {
+	groups := NewGroupLSCMD()
 
 	cmd := &cobra.Command{
 		Use:   "groups",
@@ -43,7 +43,9 @@ func NewGroupsCMD(config *config.Configuration) *cobra.Command {
 }
 
 func newGroupDeleteOptions(config *config.Configuration) *groupDeleteOptions {
-	return &groupDeleteOptions{}
+	return &groupDeleteOptions{
+		config: config,
+	}
 }
 
 type groupDeleteOptions struct {
@@ -66,15 +68,15 @@ func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Fprintf(os.Stdout, "Deleted consumer group %v.\n", group)
 }
 
-func NewGroupDeleteCMD(config *config.Configuration) *cobra.Command {
-	options := newGroupDeleteOptions(config)
+func NewGroupDeleteCMD() *cobra.Command {
+	options := newGroupDeleteOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "delete",
 		Short:             "Delete group",
 		Example:           "kafeman group delete group_name",
 		Args:              cobra.MaximumNArgs(1),
-		ValidArgsFunction: completion_cmd.NewGroupCompletion(config),
+		ValidArgsFunction: completion_cmd.NewGroupCompletion(),
 		Run:               options.run,
 	}
 
@@ -133,8 +135,8 @@ func (g *groupLSOptions) groupListPrint(groupDescs []kafeman.GroupInfo) {
 	w.Flush()
 }
 
-func NewGroupLSCMD(config *config.Configuration) *cobra.Command {
-	options := newGroupLsOptions(config)
+func NewGroupLSCMD() *cobra.Command {
+	options := newGroupLsOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:   "ls",
@@ -217,15 +219,15 @@ func (g *groupDescribeOptions) groupDescribePrint(group models.Group) {
 
 }
 
-func NewGroupDescribeCMD(config *config.Configuration) *cobra.Command {
-	options := newGroupDescribeOptions(config)
+func NewGroupDescribeCMD() *cobra.Command {
+	options := newGroupDescribeOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "describe",
 		Short:             "Describe consumer group",
 		Example:           "kafeman group describe group_name",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: completion_cmd.NewGroupCompletion(config),
+		ValidArgsFunction: completion_cmd.NewGroupCompletion(),
 		Run:               options.run,
 	}
 
@@ -287,8 +289,8 @@ func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
 	k.SetGroupOffset(cmd.Context(), group, g.topic, offsets)
 }
 
-func NewGroupCommitCMD(config *config.Configuration) *cobra.Command {
-	options := newGroupCommitOptions(config)
+func NewGroupCommitCMD() *cobra.Command {
+	options := newGroupCommitOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:     "commit",
@@ -305,7 +307,7 @@ func NewGroupCommitCMD(config *config.Configuration) *cobra.Command {
 	cmd.Flags().StringVar(&options.offset, "offset", "oldest", "Offset to start consuming. Possible values: oldest (-2), newest (-1), or integer. Default oldest")
 	cmd.RegisterFlagCompletionFunc("offset", completion_cmd.NewOffsetCompletion())
 	cmd.Flags().StringVarP(&options.topic, "topic", "t", "", "topic to set offset")
-	cmd.RegisterFlagCompletionFunc("topic", completion_cmd.NewTopicCompletion(config))
+	cmd.RegisterFlagCompletionFunc("topic", completion_cmd.NewTopicCompletion())
 	cmd.Flags().BoolVar(&options.noConfirm, "y", false, "Do not prompt for confirmation")
 
 	return cmd

@@ -19,20 +19,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewTopicCMD(config *config.Configuration) *cobra.Command {
+func NewTopicCMD() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "topic",
 		Short: "Create and describe topics.",
 	}
 
-	cmd.AddCommand(NewDescribeCMD(config))
-	cmd.AddCommand(NewTopicConsumersCMD(config))
-	cmd.AddCommand(NewDeleteTopicCMD(config))
-	cmd.AddCommand(NewLSTopicsCMD(config))
-	cmd.AddCommand(NewCreateTopicCmd(config))
-	cmd.AddCommand(NewAddConfigCmd(config))
-	cmd.AddCommand(NewTopicSetConfig(config))
-	cmd.AddCommand(NewUpdateTopicCmd(config))
+	cmd.AddCommand(NewDescribeCMD())
+	cmd.AddCommand(NewTopicConsumersCMD())
+	cmd.AddCommand(NewDeleteTopicCMD())
+	cmd.AddCommand(NewLSTopicsCMD())
+	cmd.AddCommand(NewCreateTopicCmd())
+	cmd.AddCommand(NewAddConfigCmd())
+	cmd.AddCommand(NewTopicSetConfig())
+	cmd.AddCommand(NewUpdateTopicCmd())
 
 	return cmd
 }
@@ -45,13 +45,13 @@ func newDescribeOptions(config *config.Configuration) *describeOptions {
 	}
 }
 
-func NewDescribeCMD(config *config.Configuration) *cobra.Command {
-	options := newDescribeOptions(config)
+func NewDescribeCMD() *cobra.Command {
+	options := newDescribeOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "describe",
 		Short:             "Describe topic info",
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Run:               options.run,
 	}
 
@@ -172,20 +172,15 @@ func (l *lsTopicsOptions) lsTopicsPrint(topics []models.Topic) {
 	w.Flush()
 }
 
-func NewTopicsCMD(config *config.Configuration) *cobra.Command {
-	options := newLSTopicsOptions(config)
-
-	cmd := &cobra.Command{
-		Use:   "topics",
-		Short: "List topics",
-		Run:   options.run,
-	}
+func NewTopicsCMD() *cobra.Command {
+	cmd := NewLSTopicsCMD()
+	cmd.Use = "topics"
 
 	return cmd
 }
 
-func NewLSTopicsCMD(config *config.Configuration) *cobra.Command {
-	options := newLSTopicsOptions(config)
+func NewLSTopicsCMD() *cobra.Command {
+	options := newLSTopicsOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:     "ls",
@@ -232,15 +227,15 @@ func (t *topicConsumersOptions) run(cmd *cobra.Command, args []string) {
 	t.topicConsumersPrint(consumers)
 }
 
-func NewTopicConsumersCMD(config *config.Configuration) *cobra.Command {
-	options := newTopicConsumersOptions(config)
+func NewTopicConsumersCMD() *cobra.Command {
+	options := newTopicConsumersOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "consumers",
 		Short:             "List topic consumers",
 		Args:              cobra.ExactArgs(1),
 		Example:           "kafeman topic consumers topic_name",
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Run:               options.run,
 	}
 
@@ -288,15 +283,15 @@ func (d *deleteTopicOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Fprintf(d.out, "\xE2\x9C\x85 Deleted topic %v!\n", topic)
 }
 
-func NewDeleteTopicCMD(config *config.Configuration) *cobra.Command {
-	options := newDeleteTopicOptions(config)
+func NewDeleteTopicCMD() *cobra.Command {
+	options := newDeleteTopicOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "delete TOPIC",
 		Short:             "Delete a topic",
 		Args:              cobra.ExactArgs(1),
 		Example:           "kafeman topic delete topic_name",
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Run:               options.run,
 	}
 
@@ -346,15 +341,15 @@ func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("\xE2\x9C\x85 Updated config.")
 }
 
-func NewTopicSetConfig(config *config.Configuration) *cobra.Command {
-	options := newTopicSetOptions(config)
+func NewTopicSetConfig() *cobra.Command {
+	options := newTopicSetOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "set-config",
 		Short:             "set topic config. requires Kafka >=2.3.0 on broker side and kafeman cluster config.",
 		Example:           "kafeman topic set-config topic.name cleanup.policy=delete",
 		Args:              cobra.ExactArgs(2),
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Run:               options.run,
 	}
 
@@ -403,15 +398,15 @@ func (u *updateTopicOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("\xE2\x9C\x85 Updated topic!\n")
 }
 
-func NewUpdateTopicCmd(config *config.Configuration) *cobra.Command {
-	options := newUpdateTopicOptions(config)
+func NewUpdateTopicCmd() *cobra.Command {
+	options := newUpdateTopicOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "update",
 		Short:             "Update topic",
 		Example:           "kafeman topic update topic_name -p 5 --partition-assignments '[[1,2,3],[1,2,3]]'",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Run:               options.run,
 	}
 
@@ -469,8 +464,8 @@ func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Fprintln(w, "\tCleanup Policy:\t", cleanupPolicy)
 }
 
-func NewCreateTopicCmd(config *config.Configuration) *cobra.Command {
-	options := newCreateTopicOptions(config)
+func NewCreateTopicCmd() *cobra.Command {
+	options := newCreateTopicOptions(config.Config)
 	cmd := &cobra.Command{
 		Use:     "create TOPIC",
 		Short:   "Create a topic",
@@ -515,14 +510,14 @@ func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("Added config %v=%v to topic %v.\n", key, value, topic)
 }
 
-func NewAddConfigCmd(config *config.Configuration) *cobra.Command {
-	options := newAddConfigOptions(config)
+func NewAddConfigCmd() *cobra.Command {
+	options := newAddConfigOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "add-config TOPIC KEY VALUE",
 		Short:             "Add config key/value pair to topic",
 		Example:           "kafeman topic add-config topic_name compression.type gzip",
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Args:              cobra.ExactArgs(3),
 		Run:               options.run,
 	}

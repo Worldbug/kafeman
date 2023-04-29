@@ -14,18 +14,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewProduceExampleCMD(config *config.Configuration) *cobra.Command {
-	options := newProduceOptions(config)
+func NewProduceExampleCMD() *cobra.Command {
+	options := newProduceOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "example",
 		Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
 		Example:           "kafeman example topic_name",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		PreRun:            options.setupProtoDescriptorRegistry,
 		Run: func(cmd *cobra.Command, args []string) {
-			topic := config.Topics[args[0]]
+			topic := config.Config.Topics[args[0]]
 			// TODO: add other encoders support
 			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 			if err != nil {
@@ -134,15 +134,15 @@ func (p *produceOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args [
 	}
 }
 
-func NewProduceCMD(config *config.Configuration) *cobra.Command {
-	options := newProduceOptions(config)
+func NewProduceCMD() *cobra.Command {
+	options := newProduceOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "produce",
 		Short:             "Produce record. Reads data from stdin.",
 		Example:           "kafeman produce topic_name",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		PreRun:            options.setupProtoDescriptorRegistry,
 		Run:               options.run,
 	}

@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/worldbug/kafeman/internal/config"
-	"github.com/worldbug/kafeman/internal/logger"
 
 	"github.com/mattn/go-colorable"
 	"github.com/spf13/cobra"
@@ -43,21 +42,17 @@ func NewKafemanCMD() *cobra.Command {
 		Use:     "kafeman",
 		Short:   "Kafka Command Line utility",
 		Version: fmt.Sprintf("%s (%s)", version, commit),
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			config.LoadConfig(options.configPath)
+		},
 	}
 
+	// TODO: указывать путь конфига
 	cmd.PersistentFlags().StringVar(&options.configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
-	cmd.PersistentFlags().StringVarP(&options.clusterOverride, "cluster", "c", "", "set a temporary current cluster")
-	cmd.PersistentFlags().BoolVar(&options.failTolerance, "tolerance", false, "don't crash on errors")
-	cmd.PersistentFlags().BoolVar(&options.quiet, "quiet", false, "do not print info and errors")
+	cmd.PersistentFlags().StringVarP(&config.Config.CurrentCluster, "cluster", "c", "", "set a temporary current cluster")
+	cmd.PersistentFlags().BoolVar(&config.Config.FailTolerance, "tolerance", false, "don't crash on errors")
+	cmd.PersistentFlags().BoolVar(&config.Config.Quiet, "quiet", false, "do not print info and errors")
 	cmd.RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion())
-
-	if options.clusterOverride != "" {
-		config.Config.CurrentCluster = options.clusterOverride
-	}
-
-	fmt.Println("cluster: ", options.clusterOverride)
-
-	logger.InitLogger(options.failTolerance, options.quiet)
 
 	return cmd
 }

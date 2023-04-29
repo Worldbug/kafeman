@@ -18,15 +18,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewConsumeCMD(config *config.Configuration) *cobra.Command {
-	options := newConsumeOptions(config)
+func NewConsumeCMD() *cobra.Command {
+	options := newConsumeOptions(config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "consume",
 		Short:             "Consume messages from kafka topic",
 		Example:           "kafeman consume topic_name",
 		Args:              cobra.ExactArgs(1),
-		ValidArgsFunction: completion_cmd.NewTopicCompletion(config),
+		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		PreRun:            options.setupProtoDescriptorRegistry,
 		Run:               options.run,
 	}
@@ -36,7 +36,7 @@ func NewConsumeCMD(config *config.Configuration) *cobra.Command {
 	cmd.Flags().StringVar(&options.encoding, "force-encoding", "", "Fore set encoding one of [raw,proto,avro,msgpack,base64]")
 	cmd.RegisterFlagCompletionFunc("force-encoding", completion_cmd.NewEncodingCompletion())
 	cmd.Flags().StringVarP(&options.groupID, "group", "g", "", "Consumer Group ID to use for consume")
-	cmd.RegisterFlagCompletionFunc("group", completion_cmd.NewGroupCompletion(config))
+	cmd.RegisterFlagCompletionFunc("group", completion_cmd.NewGroupCompletion())
 	cmd.Flags().BoolVarP(&options.follow, "follow", "f", false, "Continue to consume messages until program execution is interrupted/terminated")
 	cmd.Flags().BoolVar(&options.commit, "commit", false, "Commit Group offset after receiving messages. Works only if consuming as Consumer Group")
 	cmd.Flags().BoolVar(&options.printMeta, "meta", false, "Print with meta info (marshal into json)")

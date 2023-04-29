@@ -30,11 +30,7 @@ type configOptions struct {
 }
 
 // TODO: refactor
-func NewConfigCMD(kafemanCMD *cobra.Command) *cobra.Command {
-	// отвязать настройки конфига от это го места
-
-	//	options := newConfigOptions()
-
+func NewConfigCMD() *cobra.Command {
 	// if config not inited
 	if len(config.Config.Clusters) == 0 {
 		config.Config.CurrentCluster = "local"
@@ -62,12 +58,6 @@ func NewConfigCMD(kafemanCMD *cobra.Command) *cobra.Command {
 	// ConfigCMD.AddCommand(configAddEventhub)
 
 	cmd.AddCommand(NewConfigInitCMD(configPath))
-
-	// TODO: may not work
-	fmt.Println(
-		"orig: ", config.Config.CurrentCluster,
-		// "\nnew:", options.clusterOverride,
-	)
 
 	return cmd
 }

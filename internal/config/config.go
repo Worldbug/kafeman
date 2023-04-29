@@ -9,7 +9,13 @@ import (
 )
 
 func init() {
-	Config = &Configuration{}
+	// TODO: refactor
+	cfg, err := LoadConfig(getDefaultConfigPath())
+	if err != nil {
+		panic(err)
+	}
+
+	Config = cfg
 }
 
 var Config *Configuration
@@ -23,6 +29,8 @@ type Configuration struct {
 	CurrentCluster string           `yaml:"current_cluster"`
 	Clusters       Clusters         `yaml:"clusters"`
 	Topics         map[string]Topic `yaml:"topics"`
+	Quiet          bool
+	FailTolerance  bool
 }
 
 func (c *Configuration) GetCurrentCluster() Cluster {
@@ -65,16 +73,17 @@ func GenerateConfig() *Configuration {
 }
 
 func LoadConfig(configPath string) (*Configuration, error) {
+	config := &Configuration{}
 	path := valueOrDefault(configPath, getDefaultConfigPath())
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
-		return Config, err
+		return config, err
 	}
 
 	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(Config)
+	err = decoder.Decode(config)
 
-	return Config, err
+	return config, err
 }
 
 func ExportConfig(path string) error {
