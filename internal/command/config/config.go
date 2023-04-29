@@ -6,42 +6,39 @@ import (
 	"strings"
 
 	"github.com/worldbug/kafeman/internal/command"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
-	configProvider "github.com/worldbug/kafeman/internal/config"
-
-	"github.com/worldbug/kafeman/internal/logger"
+	"github.com/worldbug/kafeman/internal/config"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
-func newConfigOptions() configOptions {
-	return configOptions{
-		configPath:      "",
-		clusterOverride: "",
-		failTolerance:   false,
-		quiet:           false,
+func newConfigOptions() *configOptions {
+	return &configOptions{
+		// configPath:      "",
+		// clusterOverride: "",
+		// failTolerance:   false,
+		// quiet:           false,
 	}
 }
 
 // TODO:
 type configOptions struct {
-	configPath      string
-	clusterOverride string
-	failTolerance   bool
-	quiet           bool
+	// configPath      string
+	// clusterOverride string
+	// failTolerance   bool
+	// quiet           bool
 }
 
 // TODO: refactor
-func NewConfigCMD(kafemanCMD *cobra.Command, config *configProvider.Config) *cobra.Command {
+func NewConfigCMD(kafemanCMD *cobra.Command) *cobra.Command {
 	// отвязать настройки конфига от это го места
 
-	options := newConfigOptions()
+	//	options := newConfigOptions()
 
 	// if config not inited
-	if len(config.Clusters) == 0 {
-		config.CurrentCluster = "local"
-		config.Clusters = append(config.Clusters, configProvider.Cluster{
+	if len(config.Config.Clusters) == 0 {
+		config.Config.CurrentCluster = "local"
+		config.Config.Clusters = append(config.Config.Clusters, config.Cluster{
 			Name:    "local",
 			Brokers: []string{"localhost:9092"},
 		})
@@ -52,12 +49,6 @@ func NewConfigCMD(kafemanCMD *cobra.Command, config *configProvider.Config) *cob
 		Short: "Handle kafman configuration",
 	}
 
-	kafemanCMD.PersistentFlags().StringVar(&options.configPath, "config", "", "config file (default is $HOME/.kafeman/config.yml)")
-	kafemanCMD.PersistentFlags().StringVarP(&options.clusterOverride, "cluster", "c", "", "set a temporary current cluster")
-	kafemanCMD.PersistentFlags().BoolVar(&options.failTolerance, "tolerance", false, "don't crash on errors")
-	kafemanCMD.PersistentFlags().BoolVar(&options.quiet, "quiet", false, "do not print info and errors")
-	kafemanCMD.RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion(config))
-
 	// TODO:
 	configPath := ""
 	// ConfigCMD.AddCommand(configImportCmd)
@@ -65,48 +56,48 @@ func NewConfigCMD(kafemanCMD *cobra.Command, config *configProvider.Config) *cob
 	// ConfigCMD.AddCommand(configLsCmd)
 	// ConfigCMD.AddCommand(configAddClusterCmd)
 	// ConfigCMD.AddCommand(configRemoveClusterCmd)
-	cmd.AddCommand(NewConfigSelectCluster(config, configPath))
+	cmd.AddCommand(NewConfigSelectCluster(configPath))
 	// TODO: bug NewConfigCurrentContextCMD
-	cmd.AddCommand(NewConfigCurrentContextCMD(config, configPath))
+	cmd.AddCommand(NewConfigCurrentContextCMD(configPath))
 	// ConfigCMD.AddCommand(configAddEventhub)
 
 	cmd.AddCommand(NewConfigInitCMD(configPath))
 
 	// TODO: may not work
-	if options.clusterOverride != "" {
-		config.CurrentCluster = options.clusterOverride
-	}
-
-	logger.InitLogger(options.failTolerance, options.quiet)
+	fmt.Println(
+		"orig: ", config.Config.CurrentCluster,
+		// "\nnew:", options.clusterOverride,
+	)
 
 	return cmd
 }
 
-func NewConfigCurrentContextCMD(config *configProvider.Config, configPath string) *cobra.Command {
+func NewConfigCurrentContextCMD(configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current-context",
 		Short: "Displays the current context",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintf(os.Stdout, "%s\n", config.GetCurrentCluster().Name)
+			fmt.Fprintf(os.Stdout, "%s\n", config.Config.GetCurrentCluster().Name)
 		},
 	}
 
 	return cmd
 }
 
-func NewConfigSelectCluster(config *configProvider.Config, configPath string) *cobra.Command {
+func NewConfigSelectCluster(configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "select-cluster",
 		Aliases: []string{"ls"},
 		Example: "kafeman config select-cluster",
 		Short:   "Interactively select a cluster",
+		// ValidArgsFunction: completion_cmd.NewClusterCompletion(config),
 		Run: func(cmd *cobra.Command, args []string) {
 			var clusterNames []string
 			var pos = 0
-			for k, cluster := range config.Clusters {
+			for k, cluster := range config.Config.Clusters {
 				clusterNames = append(clusterNames, cluster.Name)
-				if cluster.Name == config.GetCurrentCluster().Name {
+				if cluster.Name == config.Config.GetCurrentCluster().Name {
 					pos = k
 				}
 			}
@@ -132,8 +123,8 @@ func NewConfigSelectCluster(config *configProvider.Config, configPath string) *c
 				os.Exit(0)
 			}
 
-			config.SetCurrentCluster(selected)
-			err = configProvider.SaveConfig(config, configPath)
+			config.Config.SetCurrentCluster(selected)
+			err = config.SaveConfig(config.Config, configPath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Can`t save config: %+v", err)
 				os.Exit(0)
@@ -149,7 +140,7 @@ func NewConfigInitCMD(configPath string) *cobra.Command {
 		Use:   "init",
 		Short: "Create empty config and export to file (default ~/.kafeman/config.yml)",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := configProvider.ExportConfig(configPath)
+			err := config.ExportConfig(configPath)
 			if err != nil {
 				command.ExitWithErr("Can`t save config: %+v", err)
 			}

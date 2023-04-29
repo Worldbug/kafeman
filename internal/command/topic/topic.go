@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewTopicCMD(config *config.Config) *cobra.Command {
+func NewTopicCMD(config *config.Configuration) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "topic",
 		Short: "Create and describe topics.",
@@ -37,7 +37,7 @@ func NewTopicCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newDescribeOptions(config *config.Config) *describeOptions {
+func newDescribeOptions(config *config.Configuration) *describeOptions {
 	return &describeOptions{
 		out:              os.Stdout,
 		config:           config,
@@ -45,7 +45,7 @@ func newDescribeOptions(config *config.Config) *describeOptions {
 	}
 }
 
-func NewDescribeCMD(config *config.Config) *cobra.Command {
+func NewDescribeCMD(config *config.Configuration) *cobra.Command {
 	options := newDescribeOptions(config)
 
 	cmd := &cobra.Command{
@@ -62,7 +62,7 @@ func NewDescribeCMD(config *config.Config) *cobra.Command {
 }
 
 type describeOptions struct {
-	config *config.Config
+	config *config.Configuration
 
 	command.PrettyPrintFlags
 	out    io.Writer
@@ -127,7 +127,7 @@ func (d *describeOptions) describeTopicPrint(topicInfo models.TopicInfo) {
 
 }
 
-func newLSTopicsOptions(config *config.Config) *lsTopicsOptions {
+func newLSTopicsOptions(config *config.Configuration) *lsTopicsOptions {
 	return &lsTopicsOptions{
 		config:           config,
 		out:              os.Stdout,
@@ -136,7 +136,7 @@ func newLSTopicsOptions(config *config.Config) *lsTopicsOptions {
 }
 
 type lsTopicsOptions struct {
-	config *config.Config
+	config *config.Configuration
 	command.PrettyPrintFlags
 	out    io.Writer
 	asJson bool
@@ -172,7 +172,7 @@ func (l *lsTopicsOptions) lsTopicsPrint(topics []models.Topic) {
 	w.Flush()
 }
 
-func NewTopicsCMD(config *config.Config) *cobra.Command {
+func NewTopicsCMD(config *config.Configuration) *cobra.Command {
 	options := newLSTopicsOptions(config)
 
 	cmd := &cobra.Command{
@@ -184,7 +184,7 @@ func NewTopicsCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func NewLSTopicsCMD(config *config.Config) *cobra.Command {
+func NewLSTopicsCMD(config *config.Configuration) *cobra.Command {
 	options := newLSTopicsOptions(config)
 
 	cmd := &cobra.Command{
@@ -201,7 +201,7 @@ func NewLSTopicsCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newTopicConsumersOptions(config *config.Config) *topicConsumersOptions {
+func newTopicConsumersOptions(config *config.Configuration) *topicConsumersOptions {
 	return &topicConsumersOptions{
 		config:           config,
 		out:              os.Stdout,
@@ -210,7 +210,7 @@ func newTopicConsumersOptions(config *config.Config) *topicConsumersOptions {
 }
 
 type topicConsumersOptions struct {
-	config *config.Config
+	config *config.Configuration
 	asJson bool
 	out    io.Writer
 
@@ -232,7 +232,7 @@ func (t *topicConsumersOptions) run(cmd *cobra.Command, args []string) {
 	t.topicConsumersPrint(consumers)
 }
 
-func NewTopicConsumersCMD(config *config.Config) *cobra.Command {
+func NewTopicConsumersCMD(config *config.Configuration) *cobra.Command {
 	options := newTopicConsumersOptions(config)
 
 	cmd := &cobra.Command{
@@ -264,7 +264,7 @@ func (t *topicConsumersOptions) topicConsumersPrint(consumers models.TopicConsum
 	}
 }
 
-func newDeleteTopicOptions(config *config.Config) *deleteTopicOptions {
+func newDeleteTopicOptions(config *config.Configuration) *deleteTopicOptions {
 	return &deleteTopicOptions{
 		config: config,
 		out:    os.Stdout,
@@ -272,7 +272,7 @@ func newDeleteTopicOptions(config *config.Config) *deleteTopicOptions {
 }
 
 type deleteTopicOptions struct {
-	config *config.Config
+	config *config.Configuration
 	out    io.Writer
 }
 
@@ -288,7 +288,7 @@ func (d *deleteTopicOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Fprintf(d.out, "\xE2\x9C\x85 Deleted topic %v!\n", topic)
 }
 
-func NewDeleteTopicCMD(config *config.Config) *cobra.Command {
+func NewDeleteTopicCMD(config *config.Configuration) *cobra.Command {
 	options := newDeleteTopicOptions(config)
 
 	cmd := &cobra.Command{
@@ -303,14 +303,14 @@ func NewDeleteTopicCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newTopicSetOptions(config *config.Config) *topicSetOptions {
+func newTopicSetOptions(config *config.Configuration) *topicSetOptions {
 	return &topicSetOptions{
 		config: config,
 	}
 }
 
 type topicSetOptions struct {
-	config *config.Config
+	config *config.Configuration
 }
 
 func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
@@ -346,7 +346,7 @@ func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("\xE2\x9C\x85 Updated config.")
 }
 
-func NewTopicSetConfig(config *config.Config) *cobra.Command {
+func NewTopicSetConfig(config *config.Configuration) *cobra.Command {
 	options := newTopicSetOptions(config)
 
 	cmd := &cobra.Command{
@@ -361,14 +361,14 @@ func NewTopicSetConfig(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newUpdateTopicOptions(config *config.Config) *updateTopicOptions {
+func newUpdateTopicOptions(config *config.Configuration) *updateTopicOptions {
 	return &updateTopicOptions{
 		config: config,
 	}
 }
 
 type updateTopicOptions struct {
-	config *config.Config
+	config *config.Configuration
 
 	partitionAssignments string
 	// TODO:
@@ -403,7 +403,7 @@ func (u *updateTopicOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("\xE2\x9C\x85 Updated topic!\n")
 }
 
-func NewUpdateTopicCmd(config *config.Config) *cobra.Command {
+func NewUpdateTopicCmd(config *config.Configuration) *cobra.Command {
 	options := newUpdateTopicOptions(config)
 
 	cmd := &cobra.Command{
@@ -421,7 +421,7 @@ func NewUpdateTopicCmd(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newCreateTopicOptions(config *config.Config) *createTopicOptions {
+func newCreateTopicOptions(config *config.Configuration) *createTopicOptions {
 	return &createTopicOptions{
 		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
@@ -430,7 +430,7 @@ func newCreateTopicOptions(config *config.Config) *createTopicOptions {
 }
 
 type createTopicOptions struct {
-	config *config.Config
+	config *config.Configuration
 	command.PrettyPrintFlags
 	out io.Writer
 
@@ -469,7 +469,7 @@ func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Fprintln(w, "\tCleanup Policy:\t", cleanupPolicy)
 }
 
-func NewCreateTopicCmd(config *config.Config) *cobra.Command {
+func NewCreateTopicCmd(config *config.Configuration) *cobra.Command {
 	options := newCreateTopicOptions(config)
 	cmd := &cobra.Command{
 		Use:     "create TOPIC",
@@ -486,14 +486,14 @@ func NewCreateTopicCmd(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newAddConfigOptions(config *config.Config) *addConfigOptions {
+func newAddConfigOptions(config *config.Configuration) *addConfigOptions {
 	return &addConfigOptions{
 		config: config,
 	}
 }
 
 type addConfigOptions struct {
-	config *config.Config
+	config *config.Configuration
 }
 
 func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
@@ -515,7 +515,7 @@ func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Printf("Added config %v=%v to topic %v.\n", key, value, topic)
 }
 
-func NewAddConfigCmd(config *config.Config) *cobra.Command {
+func NewAddConfigCmd(config *config.Configuration) *cobra.Command {
 	options := newAddConfigOptions(config)
 
 	cmd := &cobra.Command{

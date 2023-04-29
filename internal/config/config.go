@@ -8,18 +8,24 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func init() {
+	Config = &Configuration{}
+}
+
+var Config *Configuration
+
 const (
 	defaultConfigDir  = `/.config/kafeman`
 	defaultConfigName = "config.yml"
 )
 
-type Config struct {
+type Configuration struct {
 	CurrentCluster string           `yaml:"current_cluster"`
 	Clusters       Clusters         `yaml:"clusters"`
 	Topics         map[string]Topic `yaml:"topics"`
 }
 
-func (c *Config) GetCurrentCluster() Cluster {
+func (c *Configuration) GetCurrentCluster() Cluster {
 	for _, cluster := range c.Clusters {
 		if cluster.Name == c.CurrentCluster {
 			return cluster
@@ -29,12 +35,12 @@ func (c *Config) GetCurrentCluster() Cluster {
 	return Cluster{}
 }
 
-func (c *Config) SetCurrentCluster(name string) {
+func (c *Configuration) SetCurrentCluster(name string) {
 	c.CurrentCluster = name
 }
 
-func GenerateConfig() *Config {
-	return &Config{
+func GenerateConfig() *Configuration {
+	return &Configuration{
 		CurrentCluster: "prod",
 		Clusters: Clusters{
 			Cluster{
@@ -58,19 +64,17 @@ func GenerateConfig() *Config {
 	}
 }
 
-func LoadConfig(configPath string) (*Config, error) {
-	cfg := &Config{}
-
+func LoadConfig(configPath string) (*Configuration, error) {
 	path := valueOrDefault(configPath, getDefaultConfigPath())
 	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
 	if err != nil {
-		return cfg, err
+		return Config, err
 	}
 
 	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&cfg)
+	err = decoder.Decode(Config)
 
-	return cfg, err
+	return Config, err
 }
 
 func ExportConfig(path string) error {
@@ -78,7 +82,7 @@ func ExportConfig(path string) error {
 	return SaveConfig(c, path)
 }
 
-func SaveConfig(config *Config, path string) error {
+func SaveConfig(config *Configuration, path string) error {
 	if path == "" {
 		home, err := homedir.Dir()
 		if err != nil {

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	config_cmd "github.com/worldbug/kafeman/internal/command/config"
 	consume_cmd "github.com/worldbug/kafeman/internal/command/consume"
@@ -20,13 +19,10 @@ import (
 const configPath = ""
 
 func App() *cobra.Command {
-	config, err := config.LoadConfig(configPath)
-	if err != nil {
-		command.ExitWithErr("Can`t load config: %+v", err)
-	}
+	config, _ := config.LoadConfig(configPath)
 
-	kafeman := kafeman_cmd.NewKafemanCMD(config)
-	kafeman.AddCommand(config_cmd.NewConfigCMD(kafeman, config))
+	kafeman := kafeman_cmd.NewKafemanCMD()
+	kafeman.AddCommand(config_cmd.NewConfigCMD(kafeman))
 
 	kafeman.AddCommand(completion_cmd.NewCompletion(kafeman))
 	kafeman.AddCommand(consume_cmd.NewConsumeCMD(config))

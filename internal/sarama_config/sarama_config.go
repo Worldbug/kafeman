@@ -10,7 +10,7 @@ import (
 	"github.com/worldbug/kafeman/internal/config"
 )
 
-func GetSaramaFromConfig(config *config.Config) (*sarama.Config, error) {
+func GetSaramaFromConfig(config *config.Configuration) (*sarama.Config, error) {
 	cluster := config.GetCurrentCluster()
 
 	saramaConfig := sarama.NewConfig()

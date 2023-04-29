@@ -1,7 +1,6 @@
 package group_cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewGroupCMD(config *config.Config) *cobra.Command {
+func NewGroupCMD(config *config.Configuration) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "group",
 		Short: "Display information about consumer groups.",
@@ -31,7 +30,7 @@ func NewGroupCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func NewGroupsCMD(config *config.Config) *cobra.Command {
+func NewGroupsCMD(config *config.Configuration) *cobra.Command {
 	groups := NewGroupLSCMD(config)
 
 	cmd := &cobra.Command{
@@ -43,12 +42,12 @@ func NewGroupsCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newGroupDeleteOptions(config *config.Config) *groupDeleteOptions {
+func newGroupDeleteOptions(config *config.Configuration) *groupDeleteOptions {
 	return &groupDeleteOptions{}
 }
 
 type groupDeleteOptions struct {
-	config *config.Config
+	config *config.Configuration
 }
 
 func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
@@ -67,7 +66,7 @@ func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
 	fmt.Fprintf(os.Stdout, "Deleted consumer group %v.\n", group)
 }
 
-func NewGroupDeleteCMD(config *config.Config) *cobra.Command {
+func NewGroupDeleteCMD(config *config.Configuration) *cobra.Command {
 	options := newGroupDeleteOptions(config)
 
 	cmd := &cobra.Command{
@@ -82,7 +81,7 @@ func NewGroupDeleteCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newGroupLsOptions(config *config.Config) *groupLSOptions {
+func newGroupLsOptions(config *config.Configuration) *groupLSOptions {
 	return &groupLSOptions{
 		config:           config,
 		out:              os.Stdout,
@@ -91,7 +90,7 @@ func newGroupLsOptions(config *config.Config) *groupLSOptions {
 }
 
 type groupLSOptions struct {
-	config *config.Config
+	config *config.Configuration
 	asJson bool
 
 	out io.Writer
@@ -134,7 +133,7 @@ func (g *groupLSOptions) groupListPrint(groupDescs []kafeman.GroupInfo) {
 	w.Flush()
 }
 
-func NewGroupLSCMD(config *config.Config) *cobra.Command {
+func NewGroupLSCMD(config *config.Configuration) *cobra.Command {
 	options := newGroupLsOptions(config)
 
 	cmd := &cobra.Command{
@@ -150,15 +149,16 @@ func NewGroupLSCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newGroupDescribeOptions(config *config.Config) *groupDescribeOptions {
+func newGroupDescribeOptions(config *config.Configuration) *groupDescribeOptions {
 	return &groupDescribeOptions{
 		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		out:              os.Stdout,
 	}
 }
 
 type groupDescribeOptions struct {
-	config *config.Config
+	config *config.Configuration
 
 	asJson   bool
 	printAll bool
@@ -173,23 +173,11 @@ func (g *groupDescribeOptions) run(cmd *cobra.Command, args []string) {
 	group := k.DescribeGroup(cmd.Context(), args[0])
 
 	if g.asJson {
-		g.jsonGroupDescribe(group)
+		command.PrintJson(group)
 		return
 	}
 
 	g.groupDescribePrint(group)
-}
-
-func (g *groupDescribeOptions) jsonGroupDescribe(group models.Group) {
-	var output []byte
-	if g.printAll {
-		output, _ = json.Marshal(group)
-		fmt.Fprintln(g.out, string(output))
-		return
-	}
-
-	output, _ = json.Marshal(group.Offsets)
-	fmt.Fprintln(g.out, string(output))
 }
 
 func (g *groupDescribeOptions) groupDescribePrint(group models.Group) {
@@ -229,7 +217,7 @@ func (g *groupDescribeOptions) groupDescribePrint(group models.Group) {
 
 }
 
-func NewGroupDescribeCMD(config *config.Config) *cobra.Command {
+func NewGroupDescribeCMD(config *config.Configuration) *cobra.Command {
 	options := newGroupDescribeOptions(config)
 
 	cmd := &cobra.Command{
@@ -248,14 +236,14 @@ func NewGroupDescribeCMD(config *config.Config) *cobra.Command {
 	return cmd
 }
 
-func newGroupCommitOptions(config *config.Config) *groupCommitOptions {
+func newGroupCommitOptions(config *config.Configuration) *groupCommitOptions {
 	return &groupCommitOptions{
 		config: config,
 	}
 }
 
 type groupCommitOptions struct {
-	config *config.Config
+	config *config.Configuration
 
 	fromJson      bool
 	allPartitions bool
@@ -299,7 +287,7 @@ func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
 	k.SetGroupOffset(cmd.Context(), group, g.topic, offsets)
 }
 
-func NewGroupCommitCMD(config *config.Config) *cobra.Command {
+func NewGroupCommitCMD(config *config.Configuration) *cobra.Command {
 	options := newGroupCommitOptions(config)
 
 	cmd := &cobra.Command{

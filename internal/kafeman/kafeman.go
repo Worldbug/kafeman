@@ -20,7 +20,7 @@ type Decoder interface {
 	Decode([]byte) ([]byte, error)
 }
 
-func Newkafeman(config *config.Config) *kafeman {
+func Newkafeman(config *config.Configuration) *kafeman {
 	return &kafeman{
 		config:    config,
 		outWriter: os.Stdout,
@@ -29,7 +29,7 @@ func Newkafeman(config *config.Config) *kafeman {
 }
 
 type kafeman struct {
-	config *config.Config
+	config *config.Configuration
 
 	outWriter io.Writer
 	errWriter io.Writer

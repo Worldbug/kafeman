@@ -15,7 +15,7 @@ import (
 )
 
 func NewSaramaConsuemr(
-	config *config.Config,
+	config *config.Configuration,
 	consumerGroupID string,
 	topic string,
 	partitions []int32,
@@ -41,7 +41,7 @@ func NewSaramaConsuemr(
 }
 
 type Consumer struct {
-	config   *config.Config
+	config   *config.Configuration
 	messages chan models.Message
 
 	consumerGroupID string
@@ -163,6 +163,7 @@ func (c *Consumer) getSaramaConfig() (*sarama.Config, error) {
 	}
 
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.commit
+	saramaConfig.Consumer.Group.Session.Timeout = time.Second * 5
 
 	if c.offset == sarama.OffsetNewest || c.offset == sarama.OffsetOldest {
 		saramaConfig.Consumer.Offsets.Initial = c.offset
