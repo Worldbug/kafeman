@@ -1,16 +1,8 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-
-	"github.com/mitchellh/go-homedir"
 	"github.com/worldbug/kafeman/internal/utils"
-	"gopkg.in/yaml.v3"
 )
-
-var ConfigPath = getDefaultConfigPath()
-var Config = readConfiguration()
 
 type Configuration struct {
 	CurrentCluster string    `yaml:"current_cluster"`
@@ -18,10 +10,6 @@ type Configuration struct {
 	Topics         []Topic   `yaml:"topics"`
 	Quiet          bool      `yaml:"-"`
 	FailTolerance  bool      `yaml:"-"`
-}
-
-func SetCurrentCluster(name string) bool {
-	return Config.SetCurrentCluster(name)
 }
 
 func (c *Configuration) SetCurrentCluster(name string) bool {
@@ -34,12 +22,8 @@ func (c *Configuration) SetCurrentCluster(name string) bool {
 	return true
 }
 
-func GetCurrentCluster() Cluster {
-	return Config.GetCurrentCluster()
-}
-
 func (c *Configuration) GetCurrentCluster() Cluster {
-	cluster, ok := c.GetClusterByName(Config.CurrentCluster)
+	cluster, ok := c.GetClusterByName(c.CurrentCluster)
 	if !ok {
 		return Cluster{}
 	}
@@ -47,42 +31,26 @@ func (c *Configuration) GetCurrentCluster() Cluster {
 	return cluster
 }
 
-func GetClusterByName(name string) (Cluster, bool) {
-	return Config.GetClusterByName(name)
-}
-
 func (c *Configuration) GetClusterByName(name string) (Cluster, bool) {
-	cluster, ok := utils.SliceToMap(Config.Clusters, Cluster.GetName)[name]
+	cluster, ok := utils.SliceToMap(c.Clusters, Cluster.GetName)[name]
 	return cluster, ok
 }
 
-func SetCluster(cluster Cluster) {
-	Config.SetCluster(cluster)
-}
-
 func (c *Configuration) SetCluster(cluster Cluster) {
-	clusters := utils.SliceToMap(Config.Clusters, Cluster.GetName)
+	clusters := utils.SliceToMap(c.Clusters, Cluster.GetName)
 	clusters[cluster.GetName()] = cluster
-	Config.Clusters = utils.MapToSlice(clusters)
-}
-
-func GetTopicByName(name string) (Topic, bool) {
-	return Config.GetTopicByName(name)
+	c.Clusters = utils.MapToSlice(clusters)
 }
 
 func (c *Configuration) GetTopicByName(name string) (Topic, bool) {
-	topic, ok := utils.SliceToMap(Config.Topics, Topic.GetName)[name]
+	topic, ok := utils.SliceToMap(c.Topics, Topic.GetName)[name]
 	return topic, ok
 }
 
-func SetTopic(topic Topic) {
-	Config.SetTopic(topic)
-}
-
 func (c *Configuration) SetTopic(topic Topic) {
-	topics := utils.SliceToMap(Config.Topics, Topic.GetName)
+	topics := utils.SliceToMap(c.Topics, Topic.GetName)
 	topics[topic.GetName()] = topic
-	Config.Topics = utils.MapToSlice(topics)
+	c.Topics = utils.MapToSlice(topics)
 }
 
 type Cluster struct {
@@ -137,47 +105,4 @@ type Topic struct {
 
 func (t Topic) GetName() string {
 	return t.Name
-}
-
-func ReadConfiguration() {
-	Config = readConfiguration()
-}
-
-func readConfiguration() *Configuration {
-	config := &Configuration{}
-	file, err := os.ReadFile(ConfigPath)
-	if err != nil {
-		// TODO: error handling
-		return config
-	}
-
-	err = yaml.Unmarshal(file, config)
-	if err != nil {
-		panic(err)
-	}
-
-	return config
-}
-
-func WriteConfiguration() error {
-	file, err := yaml.Marshal(Config)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(ConfigPath, file, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getDefaultConfigPath() string {
-	home, err := homedir.Dir()
-	if err != nil {
-		panic(err)
-	}
-
-	return filepath.Join(home, ".config", "kafeman", "config.yaml")
 }

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 )
 
 func Infof(format string, a ...any) {
-	if config.Config.Quiet {
+	if global_config.Config.Quiet {
 		return
 	}
 
@@ -16,7 +16,7 @@ func Infof(format string, a ...any) {
 }
 
 func Errorf(format string, a ...any) {
-	if config.Config.Quiet {
+	if global_config.Config.Quiet {
 		return
 	}
 
@@ -25,7 +25,7 @@ func Errorf(format string, a ...any) {
 
 func Fatalf(format string, a ...any) {
 	Errorf(format, a...)
-	if !config.Config.FailTolerance {
+	if !global_config.Config.FailTolerance {
 		os.Exit(1)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 
 	"github.com/worldbug/kafeman/internal/command"
 	"github.com/worldbug/kafeman/internal/config"
@@ -15,7 +16,7 @@ import (
 )
 
 func NewProduceExampleCMD() *cobra.Command {
-	options := newProduceOptions(config.Config)
+	options := newProduceOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "example",
@@ -25,7 +26,7 @@ func NewProduceExampleCMD() *cobra.Command {
 		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		PreRun:            options.setupProtoDescriptorRegistry,
 		Run: func(cmd *cobra.Command, args []string) {
-			topic, _ := config.Config.GetTopicByName(args[0])
+			topic, _ := global_config.GetTopicByName(args[0])
 			// TODO: add other encoders support
 			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 			if err != nil {
@@ -135,7 +136,7 @@ func (p *produceOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args [
 }
 
 func NewProduceCMD() *cobra.Command {
-	options := newProduceOptions(config.Config)
+	options := newProduceOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "produce",

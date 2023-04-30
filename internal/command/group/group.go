@@ -9,6 +9,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
@@ -69,7 +70,7 @@ func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewGroupDeleteCMD() *cobra.Command {
-	options := newGroupDeleteOptions(config.Config)
+	options := newGroupDeleteOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "delete",
@@ -136,7 +137,7 @@ func (g *groupLSOptions) groupListPrint(groupDescs []kafeman.GroupInfo) {
 }
 
 func NewGroupLSCMD() *cobra.Command {
-	options := newGroupLsOptions(config.Config)
+	options := newGroupLsOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:   "ls",
@@ -220,7 +221,7 @@ func (g *groupDescribeOptions) groupDescribePrint(group models.Group) {
 }
 
 func NewGroupDescribeCMD() *cobra.Command {
-	options := newGroupDescribeOptions(config.Config)
+	options := newGroupDescribeOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "describe",
@@ -290,7 +291,7 @@ func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewGroupCommitCMD() *cobra.Command {
-	options := newGroupCommitOptions(config.Config)
+	options := newGroupCommitOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:     "commit",

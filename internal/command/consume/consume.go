@@ -10,6 +10,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
@@ -20,7 +21,7 @@ import (
 )
 
 func NewConsumeCMD() *cobra.Command {
-	options := newConsumeOptions(config.Config)
+	options := newConsumeOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "consume",
@@ -93,9 +94,9 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 
 	k := kafeman.Newkafeman(c.config)
 
-	topicConfig, _ := config.Config.GetTopicByName(topic)
+	topicConfig, _ := global_config.GetTopicByName(topic)
 	topicConfig.ProtoType = c.protoType
-	config.Config.SetTopic(topicConfig)
+	global_config.SetTopic(topicConfig)
 
 	kafemanCommand := kafeman.ConsumeCommand{
 		Topic:          topic,

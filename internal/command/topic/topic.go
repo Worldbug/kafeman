@@ -11,6 +11,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
@@ -46,7 +47,7 @@ func newDescribeOptions(config *config.Configuration) *describeOptions {
 }
 
 func NewDescribeCMD() *cobra.Command {
-	options := newDescribeOptions(config.Config)
+	options := newDescribeOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "describe",
@@ -180,7 +181,7 @@ func NewTopicsCMD() *cobra.Command {
 }
 
 func NewLSTopicsCMD() *cobra.Command {
-	options := newLSTopicsOptions(config.Config)
+	options := newLSTopicsOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:     "ls",
@@ -228,7 +229,7 @@ func (t *topicConsumersOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewTopicConsumersCMD() *cobra.Command {
-	options := newTopicConsumersOptions(config.Config)
+	options := newTopicConsumersOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "consumers",
@@ -284,7 +285,7 @@ func (d *deleteTopicOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewDeleteTopicCMD() *cobra.Command {
-	options := newDeleteTopicOptions(config.Config)
+	options := newDeleteTopicOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "delete TOPIC",
@@ -342,7 +343,7 @@ func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewTopicSetConfig() *cobra.Command {
-	options := newTopicSetOptions(config.Config)
+	options := newTopicSetOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "set-config",
@@ -399,7 +400,7 @@ func (u *updateTopicOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewUpdateTopicCmd() *cobra.Command {
-	options := newUpdateTopicOptions(config.Config)
+	options := newUpdateTopicOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "update",
@@ -465,7 +466,7 @@ func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewCreateTopicCmd() *cobra.Command {
-	options := newCreateTopicOptions(config.Config)
+	options := newCreateTopicOptions(global_config.Config)
 	cmd := &cobra.Command{
 		Use:     "create TOPIC",
 		Short:   "Create a topic",
@@ -511,7 +512,7 @@ func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewAddConfigCmd() *cobra.Command {
-	options := newAddConfigOptions(config.Config)
+	options := newAddConfigOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "add-config TOPIC KEY VALUE",

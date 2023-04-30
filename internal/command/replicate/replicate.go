@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
@@ -79,7 +80,7 @@ func (r *replicateOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args
 
 // kafeman replicate prod/events local/events
 func NewReplicateCMD() *cobra.Command {
-	options := newReplicateOptions(config.Config)
+	options := newReplicateOptions(global_config.Config)
 
 	cmd := &cobra.Command{
 		Use:               "replicate [source] [dest]",

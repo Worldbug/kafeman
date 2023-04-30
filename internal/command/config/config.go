@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/worldbug/kafeman/internal/command"
+	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/logger"
 
@@ -33,12 +34,14 @@ type configOptions struct {
 // TODO: refactor
 func NewConfigCMD() *cobra.Command {
 	// if config not inited
-	if len(config.Config.Clusters) == 0 {
-		config.Config.CurrentCluster = "local"
-		config.Config.Clusters = append(config.Config.Clusters, config.Cluster{
-			Name:    "local",
-			Brokers: []string{"localhost:9092"},
-		})
+	if len(global_config.Config.Clusters) == 0 {
+		global_config.SetCurrentCluster("local")
+		global_config.SetCluster(
+			config.Cluster{
+				Name:    "local",
+				Brokers: []string{"localhost:9092"},
+			},
+		)
 	}
 
 	cmd := &cobra.Command{
@@ -69,7 +72,7 @@ func NewConfigCurrentContextCMD(configPath string) *cobra.Command {
 		Short: "Displays the current context",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintf(os.Stdout, "%s\n", config.GetCurrentCluster().Name)
+			fmt.Fprintf(os.Stdout, "%s\n", global_config.GetCurrentCluster().Name)
 		},
 	}
 
@@ -86,9 +89,9 @@ func NewConfigSelectCluster(configPath string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			var clusterNames []string
 			var pos = 0
-			for k, cluster := range config.Config.Clusters {
+			for k, cluster := range global_config.Config.Clusters {
 				clusterNames = append(clusterNames, cluster.Name)
-				if cluster.Name == config.GetCurrentCluster().Name {
+				if cluster.Name == global_config.GetCurrentCluster().Name {
 					pos = k
 				}
 			}
@@ -114,12 +117,12 @@ func NewConfigSelectCluster(configPath string) *cobra.Command {
 				os.Exit(0)
 			}
 
-			ok := config.SetCurrentCluster(selected)
+			ok := global_config.SetCurrentCluster(selected)
 			if !ok {
 				logger.Fatalf("Cluster %s not exist", selected)
 			}
 
-			err = config.WriteConfiguration()
+			err = global_config.WriteConfiguration()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Can`t save config: %+v", err)
 				os.Exit(0)
@@ -136,7 +139,7 @@ func NewConfigInitCMD(configPath string) *cobra.Command {
 		Short: "Create empty config and export to file (default ~/.kafeman/config.yaml)",
 		Run: func(cmd *cobra.Command, args []string) {
 			// TODO: FIXME: config path
-			err := config.WriteConfiguration()
+			err := global_config.WriteConfiguration()
 			if err != nil {
 				command.ExitWithErr("Can`t save config: %+v", err)
 			}
