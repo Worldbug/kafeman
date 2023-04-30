@@ -7,6 +7,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/command"
 	"github.com/worldbug/kafeman/internal/config"
+	"github.com/worldbug/kafeman/internal/logger"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -68,7 +69,7 @@ func NewConfigCurrentContextCMD(configPath string) *cobra.Command {
 		Short: "Displays the current context",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintf(os.Stdout, "%s\n", config.Config.GetCurrentCluster().Name)
+			fmt.Fprintf(os.Stdout, "%s\n", config.GetCurrentCluster().Name)
 		},
 	}
 
@@ -87,7 +88,7 @@ func NewConfigSelectCluster(configPath string) *cobra.Command {
 			var pos = 0
 			for k, cluster := range config.Config.Clusters {
 				clusterNames = append(clusterNames, cluster.Name)
-				if cluster.Name == config.Config.GetCurrentCluster().Name {
+				if cluster.Name == config.GetCurrentCluster().Name {
 					pos = k
 				}
 			}
@@ -113,8 +114,12 @@ func NewConfigSelectCluster(configPath string) *cobra.Command {
 				os.Exit(0)
 			}
 
-			config.Config.SetCurrentCluster(selected)
-			err = config.SaveConfig()
+			ok := config.SetCurrentCluster(selected)
+			if !ok {
+				logger.Fatalf("Cluster %s not exist", selected)
+			}
+
+			err = config.WriteConfiguration()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Can`t save config: %+v", err)
 				os.Exit(0)
@@ -130,7 +135,8 @@ func NewConfigInitCMD(configPath string) *cobra.Command {
 		Use:   "init",
 		Short: "Create empty config and export to file (default ~/.kafeman/config.yaml)",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := config.ExportConfig(configPath)
+			// TODO: FIXME: config path
+			err := config.WriteConfiguration()
 			if err != nil {
 				command.ExitWithErr("Can`t save config: %+v", err)
 			}

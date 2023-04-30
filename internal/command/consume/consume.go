@@ -12,6 +12,7 @@ import (
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
+	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/serializers"
 
@@ -27,7 +28,6 @@ func NewConsumeCMD() *cobra.Command {
 		Example:           "kafeman consume topic_name",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
-		PreRun:            options.setupProtoDescriptorRegistry,
 		Run:               options.run,
 	}
 
@@ -46,6 +46,9 @@ func NewConsumeCMD() *cobra.Command {
 	cmd.Flags().StringVar(&options.toAt, "to", "", "Consume messages until the specified time (format 2022-10-30T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
 	cmd.RegisterFlagCompletionFunc("to", completion_cmd.NewTimeCompletion())
+	cmd.Flags().StringSliceVar(&options.protoFiles, "proto-files", []string{}, "Protobuf files to use for decoding")
+	cmd.Flags().StringSliceVar(&options.protoExclude, "proto-exclude", []string{}, "Exclude fields from decoding")
+	cmd.Flags().StringVar(&options.protoType, "proto-type", "", "Protobuf message type to use for decoding")
 
 	return cmd
 }
@@ -83,10 +86,16 @@ type consumeOptions struct {
 }
 
 func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
+	c.setupProtoDescriptorRegistry()
+
 	offset := command.GetOffsetFromFlag(c.offset)
 	topic := args[0]
 
 	k := kafeman.Newkafeman(c.config)
+
+	topicConfig, _ := config.Config.GetTopicByName(topic)
+	topicConfig.ProtoType = c.protoType
+	config.Config.SetTopic(topicConfig)
 
 	kafemanCommand := kafeman.ConsumeCommand{
 		Topic:          topic,
@@ -204,14 +213,11 @@ func messageToPrintable(msg models.Message) PrintableMessage {
 	}
 }
 
-// TODO: fix duplicate
-func (c *consumeOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args []string) {
+func (c *consumeOptions) setupProtoDescriptorRegistry() {
 	if c.protoType != "" {
 		r, err := serializers.NewDescriptorRegistry(c.protoFiles, c.protoExclude)
 		if err != nil {
-			// TODO:
-			// errorExit("Failed to load protobuf files: %v\n", err)
-			panic(err)
+			logger.Errorf("Failed to load protobuf files: %v\n", err)
 		}
 
 		c.protoRegistry = r
