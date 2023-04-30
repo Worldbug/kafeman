@@ -117,7 +117,7 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder, error) {
-	topicConfig, ok := c.config.Topics[cmd.Topic]
+	topicConfig, ok := c.config.GetTopicByName(cmd.Topic)
 	if !ok && c.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}

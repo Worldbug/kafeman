@@ -25,7 +25,7 @@ func NewProduceExampleCMD() *cobra.Command {
 		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		PreRun:            options.setupProtoDescriptorRegistry,
 		Run: func(cmd *cobra.Command, args []string) {
-			topic := config.Config.Topics[args[0]]
+			topic, _ := config.Config.GetTopicByName(args[0])
 			// TODO: add other encoders support
 			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
 			if err != nil {
@@ -85,7 +85,7 @@ func (p *produceOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func (p *produceOptions) getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
-	topicConfig, ok := p.config.Topics[cmd.Topic]
+	topicConfig, ok := p.config.GetTopicByName(cmd.Topic)
 	if !ok && p.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}

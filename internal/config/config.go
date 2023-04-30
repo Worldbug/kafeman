@@ -1,12 +1,10 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 )
 
 func init() {
@@ -17,15 +15,25 @@ var Config *Configuration
 
 const (
 	defaultConfigDir  = `.config/kafeman`
-	defaultConfigName = "config.yml"
+	defaultConfigName = "config.yaml"
 )
 
 type Configuration struct {
-	CurrentCluster string           `mapstructure:"current_cluster"`
-	Clusters       Clusters         `mapstructure:"clusters"`
-	Topics         map[string]Topic `mapstructure:"topics"`
-	Quiet          bool
-	FailTolerance  bool
+	CurrentCluster string   `mapstructure:"current_cluster"`
+	Clusters       Clusters `mapstructure:"clusters"`
+	Topics         []Topic  `mapstructure:"topics"`
+	Quiet          bool     `mapstructure:"-"`
+	FailTolerance  bool     `mapstructure:"-"`
+}
+
+func (c *Configuration) GetTopicByName(name string) (Topic, bool) {
+	for _, topic := range c.Topics {
+		if topic.Name == name {
+			return topic, true
+		}
+	}
+
+	return Topic{}, false
 }
 
 func (c *Configuration) GetCurrentCluster() Cluster {
@@ -39,39 +47,16 @@ func (c *Configuration) GetCurrentCluster() Cluster {
 }
 
 func (c *Configuration) SetCurrentCluster(name string) {
+	viper.Set("current_cluster", name)
 	c.CurrentCluster = name
 }
 
-func GenerateConfig() *Configuration {
-	return &Configuration{
-		CurrentCluster: "prod",
-		Clusters: Clusters{
-			Cluster{
-				Name: "prod",
-				Brokers: []string{
-					"broker_1:9092",
-					"broker_2:9092",
-					"broker_3:9092",
-				},
-			},
-		},
-		Topics: map[string]Topic{
-			"service_topic": {
-				ProtoType: "service_event",
-				ProtoPaths: []string{
-					"./service_protos/",
-					"./additional_protos/",
-				},
-			},
-		},
-	}
-}
-
 func LoadConfig() *Configuration {
+	viper.SetConfigType("yaml")
 	viper.SetConfigFile(getDefaultConfigPath())
 	err := viper.ReadInConfig()
 	if err != nil {
-		return &Configuration{}
+		panic(err)
 	}
 
 	config := &Configuration{}
@@ -85,34 +70,11 @@ func LoadConfig() *Configuration {
 }
 
 func ExportConfig(path string) error {
-	c := GenerateConfig()
-	return SaveConfig(c, path)
+	return SaveConfig()
 }
 
-func SaveConfig(config *Configuration, path string) error {
-	if path == "" {
-		home, err := homedir.Dir()
-		if err != nil {
-			return err
-		}
-
-		configDir := filepath.Join(home, defaultConfigDir)
-		err = os.MkdirAll(configDir, 0755)
-		if err != nil {
-			return err
-		}
-
-		path = filepath.Join(configDir, defaultConfigName)
-
-	}
-
-	file, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-
-	encoder := yaml.NewEncoder(file)
-	return encoder.Encode(&config)
+func SaveConfig() error {
+	return viper.WriteConfig()
 }
 
 func getDefaultConfigPath() string {
@@ -123,3 +85,29 @@ func getDefaultConfigPath() string {
 
 	return filepath.Join(home, defaultConfigDir, defaultConfigName)
 }
+
+// TODO: FIXME:
+// func GenerateConfig() *Configuration {
+// 	return &Configuration{
+// 		CurrentCluster: "prod",
+// 		Clusters: Clusters{
+// 			Cluster{
+// 				Name: "prod",
+// 				Brokers: []string{
+// 					"broker_1:9092",
+// 					"broker_2:9092",
+// 					"broker_3:9092",
+// 				},
+// 			},
+// 		},
+// 		Topics: map[string]Topic{
+// 			"service_topic": {
+// 				ProtoType: "service_event",
+// 				ProtoPaths: []string{
+// 					"./service_protos/",
+// 					"./additional_protos/",
+// 				},
+// 			},
+// 		},
+// 	}
+// }
