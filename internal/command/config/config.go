@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/worldbug/kafeman/internal/command"
+	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/logger"
@@ -15,21 +16,10 @@ import (
 )
 
 func newConfigOptions() *configOptions {
-	return &configOptions{
-		// configPath:      "",
-		// clusterOverride: "",
-		// failTolerance:   false,
-		// quiet:           false,
-	}
+	return &configOptions{}
 }
 
-// TODO:
-type configOptions struct {
-	// configPath      string
-	// clusterOverride string
-	// failTolerance   bool
-	// quiet           bool
-}
+type configOptions struct{}
 
 // TODO: refactor
 func NewConfigCMD() *cobra.Command {
@@ -56,8 +46,7 @@ func NewConfigCMD() *cobra.Command {
 	// ConfigCMD.AddCommand(configLsCmd)
 	// ConfigCMD.AddCommand(configAddClusterCmd)
 	// ConfigCMD.AddCommand(configRemoveClusterCmd)
-	cmd.AddCommand(NewConfigSelectCluster(configPath))
-	// TODO: bug NewConfigCurrentContextCMD
+	cmd.AddCommand(NewConfigSetCluster(configPath))
 	cmd.AddCommand(NewConfigCurrentContextCMD(configPath))
 	// ConfigCMD.AddCommand(configAddEventhub)
 
@@ -79,14 +68,29 @@ func NewConfigCurrentContextCMD(configPath string) *cobra.Command {
 	return cmd
 }
 
-func NewConfigSelectCluster(configPath string) *cobra.Command {
+func NewConfigSetCluster(configPath string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "select-cluster",
-		Aliases: []string{"ls"},
-		Example: "kafeman config select-cluster",
-		Short:   "Interactively select a cluster",
-		// ValidArgsFunction: completion_cmd.NewClusterCompletion(config),
+		Use:               "set-cluster",
+		Example:           "kafeman config set-cluster",
+		Short:             "Interactively select a cluster",
+		Long:              "kafeman config set-cluster [cluster name] or kafeman config set-cluster for interactively select a cluster",
+		ValidArgsFunction: completion_cmd.NewClusterCompletion(),
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 1 {
+				ok := global_config.SetCurrentCluster(args[0])
+				if !ok {
+					logger.Fatalf("Cluster %s not exist", args[0])
+				}
+
+				err := global_config.WriteConfiguration()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Can`t save config: %+v", err)
+					os.Exit(0)
+				}
+
+				return
+			}
+
 			var clusterNames []string
 			var pos = 0
 			for k, cluster := range global_config.Config.Clusters {
