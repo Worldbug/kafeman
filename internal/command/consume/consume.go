@@ -13,9 +13,9 @@ import (
 	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
-	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/serializers"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -77,22 +77,22 @@ type consumeOptions struct {
 	encoding string
 
 	// TODO: refactor
-	protoFiles    []string
-	protoExclude  []string
-	protoType     string
-	protoRegistry *serializers.DescriptorRegistry
+	protoFiles   []string
+	protoExclude []string
+	protoType    string
 }
 
 func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
-	c.setupProtoDescriptorRegistry()
+	topic := args[0]
 
 	offset := command.GetOffsetFromFlag(c.offset)
-	topic := args[0]
 
 	k := kafeman.Newkafeman(global_config.Config)
 
 	topicConfig, _ := global_config.GetTopicByName(topic)
-	topicConfig.ProtoType = c.protoType
+	topicConfig.ProtoType = utils.OrDefault(c.protoType, topicConfig.ProtoType)
+	topicConfig.ProtoPaths = utils.OrDefaultSlice(c.protoFiles, topicConfig.ProtoPaths)
+	topicConfig.ProtoExcludePaths = utils.OrDefaultSlice(c.protoExclude, topicConfig.ProtoExcludePaths)
 	global_config.SetTopic(topicConfig)
 
 	kafemanCommand := kafeman.ConsumeCommand{
@@ -141,7 +141,7 @@ func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder
 	case config.Avro:
 		return serializers.NewAvroSerializer(topicConfig.AvroSchemaURL, topicConfig.AvroSchemaID)
 	case config.Protobuf:
-		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoExcludePaths, topicConfig.ProtoType)
 	case config.MSGPack:
 		return serializers.NewMessagePackSerializer(), nil
 	case config.Base64:
@@ -155,7 +155,7 @@ func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder
 
 	// PROTO DECODER
 	if topicConfig.ProtoType != "" || len(topicConfig.ProtoPaths) != 0 {
-		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoExcludePaths, topicConfig.ProtoType)
 	}
 
 	// RAW DECODER
@@ -211,13 +211,24 @@ func messageToPrintable(msg models.Message) PrintableMessage {
 	}
 }
 
-func (c *consumeOptions) setupProtoDescriptorRegistry() {
-	if c.protoType != "" {
-		r, err := serializers.NewDescriptorRegistry(c.protoFiles, c.protoExclude)
-		if err != nil {
-			logger.Errorf("Failed to load protobuf files: %v\n", err)
-		}
-
-		c.protoRegistry = r
-	}
-}
+// func (c *consumeOptions) setupProtoDescriptorRegistry(topic string) {
+// 	topicConfig, _ := global_config.GetTopicByName(topic)
+//
+// 	protoFiles := topicConfig.ProtoPaths
+// 	var protoExclude []string
+//
+// 	if len(c.protoFiles) != 0 {
+// 		protoFiles = c.protoFiles
+// 	}
+//
+// 	if len(c.protoExclude) != 0 {
+// 		protoExclude = c.protoFiles
+// 	}
+//
+// 	r, err := serializers.NewDescriptorRegistry(protoFiles, protoExclude)
+// 	if err != nil {
+// 		logger.Errorf("Failed to load protobuf files: %v\n", err)
+// 	}
+//
+// 	c.protoRegistry = r
+// }

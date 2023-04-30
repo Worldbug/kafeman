@@ -95,12 +95,13 @@ const (
 )
 
 type Topic struct {
-	Name          string   `yaml:"name"`
-	Encoding      Encoding `yaml:"encoding,omitempty"`
-	ProtoType     string   `yaml:"proto_type,omitempty"`
-	ProtoPaths    []string `yaml:"proto_paths,omitempty"`
-	AvroSchemaURL string   `yaml:"avro_schema_url,omitempty"`
-	AvroSchemaID  int      `yaml:"avro_schema_id,omitempty"`
+	Name              string   `yaml:"name"`
+	Encoding          Encoding `yaml:"encoding,omitempty"`
+	ProtoType         string   `yaml:"proto_type,omitempty"`
+	ProtoPaths        []string `yaml:"proto_paths,omitempty"`
+	ProtoExcludePaths []string `yaml:"proto_exclude_paths,omitempty"`
+	AvroSchemaURL     string   `yaml:"avro_schema_url,omitempty"`
+	AvroSchemaID      int      `yaml:"avro_schema_id,omitempty"`
 }
 
 func (t Topic) GetName() string {

@@ -6,6 +6,7 @@ import (
 
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/worldbug/kafeman/internal/command"
 	"github.com/worldbug/kafeman/internal/config"
@@ -16,19 +17,16 @@ import (
 )
 
 func NewProduceExampleCMD() *cobra.Command {
-	options := newProduceOptions()
-
 	cmd := &cobra.Command{
 		Use:               "example",
 		Short:             "Print example message scheme in topic (if config has proto scheme model) BETA",
 		Example:           "kafeman example topic_name",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
-		PreRun:            options.setupProtoDescriptorRegistry,
 		Run: func(cmd *cobra.Command, args []string) {
 			topic, _ := global_config.GetTopicByName(args[0])
 			// TODO: add other encoders support
-			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoType)
+			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoExcludePaths, topic.ProtoType)
 			if err != nil {
 				command.ExitWithErr("%+v", err)
 			}
@@ -73,6 +71,12 @@ func (p *produceOptions) run(cmd *cobra.Command, args []string) {
 		Partitioner: p.partitioner,
 	}
 
+	topicConfig, _ := global_config.GetTopicByName(args[0])
+	topicConfig.ProtoType = utils.OrDefault(p.protoType, topicConfig.ProtoType)
+	topicConfig.ProtoPaths = utils.OrDefaultSlice(p.protoFiles, topicConfig.ProtoPaths)
+	topicConfig.ProtoExcludePaths = utils.OrDefaultSlice(p.protoExclude, topicConfig.ProtoExcludePaths)
+	global_config.SetTopic(topicConfig)
+
 	encoder, err := p.getEncoder(produceCommand)
 	if err != nil {
 		command.ExitWithErr("%+v", err)
@@ -99,7 +103,7 @@ func (p *produceOptions) getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder
 	case config.Avro:
 		return serializers.NewAvroSerializer(topicConfig.AvroSchemaURL, topicConfig.AvroSchemaID)
 	case config.Protobuf:
-		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoExcludePaths, topicConfig.ProtoType)
 	case config.MSGPack:
 		return serializers.NewMessagePackSerializer(), nil
 	case config.Base64:
@@ -113,22 +117,11 @@ func (p *produceOptions) getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder
 
 	// PROTO DECODER
 	if topicConfig.ProtoType != "" || len(topicConfig.ProtoPaths) != 0 {
-		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoType)
+		return serializers.NewProtobufSerializer(topicConfig.ProtoPaths, topicConfig.ProtoExcludePaths, topicConfig.ProtoType)
 	}
 
 	// RAW DECODER
 	return serializers.NewRawSerializer(), nil
-}
-
-func (p *produceOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args []string) {
-	if p.protoType != "" {
-		r, err := serializers.NewDescriptorRegistry(p.protoFiles, p.protoExclude)
-		if err != nil {
-			command.ExitWithErr("Failed to load protobuf files: %v\n", err)
-		}
-
-		p.protoRegistry = r
-	}
 }
 
 func NewProduceCMD() *cobra.Command {
@@ -140,7 +133,6 @@ func NewProduceCMD() *cobra.Command {
 		Example:           "kafeman produce topic_name",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
-		PreRun:            options.setupProtoDescriptorRegistry,
 		Run:               options.run,
 	}
 

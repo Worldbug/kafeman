@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewProtobufSerializer(importPaths []string, protoType string) (*ProtobufSerializer, error) {
-	reg, err := NewDescriptorRegistry(importPaths, []string{})
+func NewProtobufSerializer(importPaths, excludePath []string, protoType string) (*ProtobufSerializer, error) {
+	reg, err := NewDescriptorRegistry(importPaths, excludePath)
 	if err != nil {
 		return nil, err
 	}

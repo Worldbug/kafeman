@@ -33,3 +33,20 @@ func MapToSlice[T1 any, T2 comparable](items map[T2]T1) []T1 {
 
 	return result
 }
+
+func OrDefault[T comparable](t1, t2 T) T {
+	empty := new(T)
+	if t1 == *empty {
+		return t2
+	}
+
+	return t1
+}
+
+func OrDefaultSlice[T comparable](t1, t2 []T) []T {
+	if len(t1) == 0 {
+		return t2
+	}
+
+	return t1
+}
