@@ -21,7 +21,7 @@ import (
 )
 
 func NewConsumeCMD() *cobra.Command {
-	options := newConsumeOptions(global_config.Config)
+	options := newConsumeOptions()
 
 	cmd := &cobra.Command{
 		Use:               "consume",
@@ -54,16 +54,13 @@ func NewConsumeCMD() *cobra.Command {
 	return cmd
 }
 
-func newConsumeOptions(config *config.Configuration) *consumeOptions {
+func newConsumeOptions() *consumeOptions {
 	return &consumeOptions{
-		config: config,
-		out:    os.Stdout,
+		out: os.Stdout,
 	}
 }
 
 type consumeOptions struct {
-	config *config.Configuration
-
 	offset        string
 	groupID       string
 	partitions    []int32
@@ -92,7 +89,7 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 	offset := command.GetOffsetFromFlag(c.offset)
 	topic := args[0]
 
-	k := kafeman.Newkafeman(c.config)
+	k := kafeman.Newkafeman(global_config.Config)
 
 	topicConfig, _ := global_config.GetTopicByName(topic)
 	topicConfig.ProtoType = c.protoType
@@ -127,7 +124,7 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder, error) {
-	topicConfig, ok := c.config.GetTopicByName(cmd.Topic)
+	topicConfig, ok := global_config.GetTopicByName(cmd.Topic)
 	if !ok && c.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}

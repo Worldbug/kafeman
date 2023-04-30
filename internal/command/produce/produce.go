@@ -16,7 +16,7 @@ import (
 )
 
 func NewProduceExampleCMD() *cobra.Command {
-	options := newProduceOptions(global_config.Config)
+	options := newProduceOptions()
 
 	cmd := &cobra.Command{
 		Use:               "example",
@@ -41,15 +41,11 @@ func NewProduceExampleCMD() *cobra.Command {
 	return cmd
 }
 
-func newProduceOptions(config *config.Configuration) *produceOptions {
-	return &produceOptions{
-		config: config,
-	}
+func newProduceOptions() *produceOptions {
+	return &produceOptions{}
 }
 
 type produceOptions struct {
-	config *config.Configuration
-
 	key         string
 	partitioner string
 	partition   int32
@@ -66,7 +62,7 @@ type produceOptions struct {
 }
 
 func (p *produceOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(p.config)
+	k := kafeman.Newkafeman(global_config.Config)
 
 	produceCommand := kafeman.ProduceCommand{
 		Topic:       args[0],
@@ -86,7 +82,7 @@ func (p *produceOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func (p *produceOptions) getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
-	topicConfig, ok := p.config.GetTopicByName(cmd.Topic)
+	topicConfig, ok := global_config.GetTopicByName(cmd.Topic)
 	if !ok && p.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}
@@ -136,7 +132,7 @@ func (p *produceOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args [
 }
 
 func NewProduceCMD() *cobra.Command {
-	options := newProduceOptions(global_config.Config)
+	options := newProduceOptions()
 
 	cmd := &cobra.Command{
 		Use:               "produce",

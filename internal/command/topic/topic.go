@@ -12,7 +12,6 @@ import (
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/command/global_config"
-	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
@@ -38,16 +37,15 @@ func NewTopicCMD() *cobra.Command {
 	return cmd
 }
 
-func newDescribeOptions(config *config.Configuration) *describeOptions {
+func newDescribeOptions() *describeOptions {
 	return &describeOptions{
 		out:              os.Stdout,
-		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 	}
 }
 
 func NewDescribeCMD() *cobra.Command {
-	options := newDescribeOptions(global_config.Config)
+	options := newDescribeOptions()
 
 	cmd := &cobra.Command{
 		Use:               "describe",
@@ -63,15 +61,13 @@ func NewDescribeCMD() *cobra.Command {
 }
 
 type describeOptions struct {
-	config *config.Configuration
-
 	command.PrettyPrintFlags
 	out    io.Writer
 	asJson bool
 }
 
 func (d *describeOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(d.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
 	if err != nil {
 		command.ExitWithErr("%+v", err)
@@ -128,23 +124,21 @@ func (d *describeOptions) describeTopicPrint(topicInfo models.TopicInfo) {
 
 }
 
-func newLSTopicsOptions(config *config.Configuration) *lsTopicsOptions {
+func newLSTopicsOptions() *lsTopicsOptions {
 	return &lsTopicsOptions{
-		config:           config,
 		out:              os.Stdout,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 	}
 }
 
 type lsTopicsOptions struct {
-	config *config.Configuration
 	command.PrettyPrintFlags
 	out    io.Writer
 	asJson bool
 }
 
 func (l *lsTopicsOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(l.config)
+	k := kafeman.Newkafeman(global_config.Config)
 
 	topics, err := k.ListTopics(cmd.Context())
 	if err != nil {
@@ -181,7 +175,7 @@ func NewTopicsCMD() *cobra.Command {
 }
 
 func NewLSTopicsCMD() *cobra.Command {
-	options := newLSTopicsOptions(global_config.Config)
+	options := newLSTopicsOptions()
 
 	cmd := &cobra.Command{
 		Use:     "ls",
@@ -197,16 +191,14 @@ func NewLSTopicsCMD() *cobra.Command {
 	return cmd
 }
 
-func newTopicConsumersOptions(config *config.Configuration) *topicConsumersOptions {
+func newTopicConsumersOptions() *topicConsumersOptions {
 	return &topicConsumersOptions{
-		config:           config,
 		out:              os.Stdout,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 	}
 }
 
 type topicConsumersOptions struct {
-	config *config.Configuration
 	asJson bool
 	out    io.Writer
 
@@ -214,7 +206,7 @@ type topicConsumersOptions struct {
 }
 
 func (t *topicConsumersOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(t.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	consumers, err := k.ListTopicConsumers(cmd.Context(), args[0])
 	if err != nil {
 		command.ExitWithErr("%+v", err)
@@ -229,7 +221,7 @@ func (t *topicConsumersOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewTopicConsumersCMD() *cobra.Command {
-	options := newTopicConsumersOptions(global_config.Config)
+	options := newTopicConsumersOptions()
 
 	cmd := &cobra.Command{
 		Use:               "consumers",
@@ -260,22 +252,20 @@ func (t *topicConsumersOptions) topicConsumersPrint(consumers models.TopicConsum
 	}
 }
 
-func newDeleteTopicOptions(config *config.Configuration) *deleteTopicOptions {
+func newDeleteTopicOptions() *deleteTopicOptions {
 	return &deleteTopicOptions{
-		config: config,
-		out:    os.Stdout,
+		out: os.Stdout,
 	}
 }
 
 type deleteTopicOptions struct {
-	config *config.Configuration
-	out    io.Writer
+	out io.Writer
 }
 
 func (d *deleteTopicOptions) run(cmd *cobra.Command, args []string) {
 	topic := args[0]
 
-	k := kafeman.Newkafeman(d.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	err := k.DeleteTopic(cmd.Context(), topic)
 	if err != nil {
 		os.Exit(1)
@@ -285,7 +275,7 @@ func (d *deleteTopicOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewDeleteTopicCMD() *cobra.Command {
-	options := newDeleteTopicOptions(global_config.Config)
+	options := newDeleteTopicOptions()
 
 	cmd := &cobra.Command{
 		Use:               "delete TOPIC",
@@ -299,18 +289,15 @@ func NewDeleteTopicCMD() *cobra.Command {
 	return cmd
 }
 
-func newTopicSetOptions(config *config.Configuration) *topicSetOptions {
-	return &topicSetOptions{
-		config: config,
-	}
+func newTopicSetOptions() *topicSetOptions {
+	return &topicSetOptions{}
 }
 
 type topicSetOptions struct {
-	config *config.Configuration
 }
 
 func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(t.config)
+	k := kafeman.Newkafeman(global_config.Config)
 
 	topic := args[0]
 
@@ -343,7 +330,7 @@ func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewTopicSetConfig() *cobra.Command {
-	options := newTopicSetOptions(global_config.Config)
+	options := newTopicSetOptions()
 
 	cmd := &cobra.Command{
 		Use:               "set-config",
@@ -357,15 +344,11 @@ func NewTopicSetConfig() *cobra.Command {
 	return cmd
 }
 
-func newUpdateTopicOptions(config *config.Configuration) *updateTopicOptions {
-	return &updateTopicOptions{
-		config: config,
-	}
+func newUpdateTopicOptions() *updateTopicOptions {
+	return &updateTopicOptions{}
 }
 
 type updateTopicOptions struct {
-	config *config.Configuration
-
 	partitionAssignments string
 	// TODO:
 	compact    bool
@@ -373,7 +356,7 @@ type updateTopicOptions struct {
 }
 
 func (u *updateTopicOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(u.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	topic := args[0]
 
 	if u.partitions == -1 && u.partitionAssignments == "" {
@@ -400,7 +383,7 @@ func (u *updateTopicOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewUpdateTopicCmd() *cobra.Command {
-	options := newUpdateTopicOptions(global_config.Config)
+	options := newUpdateTopicOptions()
 
 	cmd := &cobra.Command{
 		Use:               "update",
@@ -417,16 +400,14 @@ func NewUpdateTopicCmd() *cobra.Command {
 	return cmd
 }
 
-func newCreateTopicOptions(config *config.Configuration) *createTopicOptions {
+func newCreateTopicOptions() *createTopicOptions {
 	return &createTopicOptions{
-		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 		out:              os.Stdout,
 	}
 }
 
 type createTopicOptions struct {
-	config *config.Configuration
 	command.PrettyPrintFlags
 	out io.Writer
 
@@ -438,7 +419,7 @@ type createTopicOptions struct {
 }
 
 func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(c.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	topic := args[0]
 
 	cleanupPolicy := "delete"
@@ -466,7 +447,7 @@ func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewCreateTopicCmd() *cobra.Command {
-	options := newCreateTopicOptions(global_config.Config)
+	options := newCreateTopicOptions()
 	cmd := &cobra.Command{
 		Use:     "create TOPIC",
 		Short:   "Create a topic",
@@ -482,18 +463,15 @@ func NewCreateTopicCmd() *cobra.Command {
 	return cmd
 }
 
-func newAddConfigOptions(config *config.Configuration) *addConfigOptions {
-	return &addConfigOptions{
-		config: config,
-	}
+func newAddConfigOptions() *addConfigOptions {
+	return &addConfigOptions{}
 }
 
 type addConfigOptions struct {
-	config *config.Configuration
 }
 
 func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(a.config)
+	k := kafeman.Newkafeman(global_config.Config)
 
 	topic := args[0]
 	key := args[1]
@@ -512,7 +490,7 @@ func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewAddConfigCmd() *cobra.Command {
-	options := newAddConfigOptions(global_config.Config)
+	options := newAddConfigOptions()
 
 	cmd := &cobra.Command{
 		Use:               "add-config TOPIC KEY VALUE",

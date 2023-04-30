@@ -38,7 +38,6 @@ PowerShell:
 `
 
 func NewCompletion(kafeman *cobra.Command) *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:                   "completion [SHELL]",
 		Short:                 "Generate completion script for bash, zsh, fish or powershell",

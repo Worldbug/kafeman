@@ -10,7 +10,6 @@ import (
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/command/global_config"
-	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
 
@@ -43,18 +42,15 @@ func NewGroupsCMD() *cobra.Command {
 	return cmd
 }
 
-func newGroupDeleteOptions(config *config.Configuration) *groupDeleteOptions {
-	return &groupDeleteOptions{
-		config: config,
-	}
+func newGroupDeleteOptions() *groupDeleteOptions {
+	return &groupDeleteOptions{}
 }
 
 type groupDeleteOptions struct {
-	config *config.Configuration
 }
 
 func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(g.config)
+	k := kafeman.Newkafeman(global_config.Config)
 
 	var group string
 	if len(args) == 1 {
@@ -70,7 +66,7 @@ func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewGroupDeleteCMD() *cobra.Command {
-	options := newGroupDeleteOptions(global_config.Config)
+	options := newGroupDeleteOptions()
 
 	cmd := &cobra.Command{
 		Use:               "delete",
@@ -84,16 +80,14 @@ func NewGroupDeleteCMD() *cobra.Command {
 	return cmd
 }
 
-func newGroupLsOptions(config *config.Configuration) *groupLSOptions {
+func newGroupLsOptions() *groupLSOptions {
 	return &groupLSOptions{
-		config:           config,
 		out:              os.Stdout,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 	}
 }
 
 type groupLSOptions struct {
-	config *config.Configuration
 	asJson bool
 
 	out io.Writer
@@ -103,7 +97,7 @@ type groupLSOptions struct {
 
 func (g *groupLSOptions) run(cmd *cobra.Command, args []string) {
 	// TODO: надо тут поправить
-	k := kafeman.Newkafeman(g.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	groupList, err := k.GetGroupsList(cmd.Context())
 	if err != nil {
 		command.ExitWithErr("%+v", err)
@@ -137,7 +131,7 @@ func (g *groupLSOptions) groupListPrint(groupDescs []kafeman.GroupInfo) {
 }
 
 func NewGroupLSCMD() *cobra.Command {
-	options := newGroupLsOptions(global_config.Config)
+	options := newGroupLsOptions()
 
 	cmd := &cobra.Command{
 		Use:   "ls",
@@ -152,17 +146,14 @@ func NewGroupLSCMD() *cobra.Command {
 	return cmd
 }
 
-func newGroupDescribeOptions(config *config.Configuration) *groupDescribeOptions {
+func newGroupDescribeOptions() *groupDescribeOptions {
 	return &groupDescribeOptions{
-		config:           config,
 		PrettyPrintFlags: command.NewPrettyPrintFlags(),
 		out:              os.Stdout,
 	}
 }
 
 type groupDescribeOptions struct {
-	config *config.Configuration
-
 	asJson   bool
 	printAll bool
 
@@ -172,7 +163,7 @@ type groupDescribeOptions struct {
 }
 
 func (g *groupDescribeOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(g.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	group := k.DescribeGroup(cmd.Context(), args[0])
 
 	if g.asJson {
@@ -221,7 +212,7 @@ func (g *groupDescribeOptions) groupDescribePrint(group models.Group) {
 }
 
 func NewGroupDescribeCMD() *cobra.Command {
-	options := newGroupDescribeOptions(global_config.Config)
+	options := newGroupDescribeOptions()
 
 	cmd := &cobra.Command{
 		Use:               "describe",
@@ -239,15 +230,11 @@ func NewGroupDescribeCMD() *cobra.Command {
 	return cmd
 }
 
-func newGroupCommitOptions(config *config.Configuration) *groupCommitOptions {
-	return &groupCommitOptions{
-		config: config,
-	}
+func newGroupCommitOptions() *groupCommitOptions {
+	return &groupCommitOptions{}
 }
 
 type groupCommitOptions struct {
-	config *config.Configuration
-
 	fromJson      bool
 	allPartitions bool
 	noConfirm     bool
@@ -257,7 +244,7 @@ type groupCommitOptions struct {
 }
 
 func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(g.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	group := args[0]
 	offsets := make([]models.Offset, 0)
 	// partitions := make([]int, 0)
@@ -291,7 +278,7 @@ func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func NewGroupCommitCMD() *cobra.Command {
-	options := newGroupCommitOptions(global_config.Config)
+	options := newGroupCommitOptions()
 
 	cmd := &cobra.Command{
 		Use:     "commit",

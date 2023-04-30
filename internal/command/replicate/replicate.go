@@ -7,20 +7,15 @@ import (
 	"github.com/worldbug/kafeman/internal/command"
 	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/command/global_config"
-	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
 )
 
-func newReplicateOptions(config *config.Configuration) *replicateOptions {
-	return &replicateOptions{
-		config: config,
-	}
+func newReplicateOptions() *replicateOptions {
+	return &replicateOptions{}
 }
 
 type replicateOptions struct {
-	config *config.Configuration
-
 	// TODO: refactor
 	protoFiles    []string
 	protoExclude  []string
@@ -47,7 +42,7 @@ func (r *replicateOptions) run(cmd *cobra.Command, args []string) {
 	source := parseReplicateArg(args[0])
 	dest := parseReplicateArg(args[1])
 
-	k := kafeman.Newkafeman(r.config)
+	k := kafeman.Newkafeman(global_config.Config)
 	k.Replicate(cmd.Context(), kafeman.ReplicateCMD{
 		SourceTopic:       source[1],
 		SourceBroker:      source[0],
@@ -80,7 +75,7 @@ func (r *replicateOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args
 
 // kafeman replicate prod/events local/events
 func NewReplicateCMD() *cobra.Command {
-	options := newReplicateOptions(global_config.Config)
+	options := newReplicateOptions()
 
 	cmd := &cobra.Command{
 		Use:               "replicate [source] [dest]",
