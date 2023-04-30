@@ -1,30 +1,28 @@
 package config
 
-type Clusters []Cluster
-
 type Cluster struct {
-	Name              string   `mapstructure:"name"`
-	Brokers           []string `mapstructure:"brokers"`
-	Version           string   `mapstructure:"version"`
-	SASL              *SASL    `mapstructure:"SASL"`
-	TLS               *TLS     `mapstructure:"TLS"`
-	SecurityProtocol  string   `mapstructure:"security-protocol"`
-	SchemaRegistryURL string   `mapstructure:"schema-registry-url"`
+	Name              string   `mapstructure:"name,omitempty"`
+	Brokers           []string `mapstructure:"brokers,omitempty"`
+	Version           string   `mapstructure:"version,omitempty"`
+	SASL              *SASL    `mapstructure:"sasl,omitempty"`
+	TLS               *TLS     `mapstructure:"tls,omitempty"`
+	SecurityProtocol  string   `mapstructure:"security_protocol,omitempty"`
+	SchemaRegistryURL string   `mapstructure:"schema_registry_url,omitempty"`
 }
 
 type SASL struct {
-	Mechanism    string `mapstructure:"mechanism"`
-	Username     string `mapstructure:"username"`
-	Password     string `mapstructure:"password"`
-	ClientID     string `mapstructure:"clientID"`
-	ClientSecret string `mapstructure:"clientSecret"`
-	TokenURL     string `mapstructure:"tokenURL"`
-	Token        string `mapstructure:"token"`
+	Mechanism    string `mapstructure:"mechanism,omitempty"`
+	Username     string `mapstructure:"username,omitempty"`
+	Password     string `mapstructure:"password,omitempty"`
+	ClientID     string `mapstructure:"client_id,omitempty"`
+	ClientSecret string `mapstructure:"client_secret,omitempty"`
+	TokenURL     string `mapstructure:"token_url,omitempty"`
+	Token        string `mapstructure:"token,omitempty"`
 }
 
 type TLS struct {
-	Cafile        string
-	Clientfile    string
-	Clientkeyfile string
-	Insecure      bool
+	Cafile        string `mapstructure:"cafile,omitempty"`
+	Clientfile    string `mapstructure:"clientfile,omitempty"`
+	Clientkeyfile string `mapstructure:"clientkeyfile,omitempty"`
+	Insecure      bool   `mapstructure:"insecure,omitempty"`
 }
