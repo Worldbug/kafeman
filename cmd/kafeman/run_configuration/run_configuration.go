@@ -1,4 +1,4 @@
-package common
+package run_configuration
 
 import (
 	"os"

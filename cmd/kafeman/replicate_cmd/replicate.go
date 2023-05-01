@@ -4,9 +4,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/worldbug/kafeman/internal/command"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/common"
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
 )
@@ -38,11 +38,11 @@ type replicateOptions struct {
 }
 
 func (r *replicateOptions) run(cmd *cobra.Command, args []string) {
-	offset := command.GetOffsetFromFlag(r.offset)
+	offset := common.GetOffsetFromFlag(r.offset)
 	source := parseReplicateArg(args[0])
 	dest := parseReplicateArg(args[1])
 
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	k.Replicate(cmd.Context(), kafeman.ReplicateCMD{
 		SourceTopic:       source[1],
 		SourceBroker:      source[0],
@@ -57,8 +57,8 @@ func (r *replicateOptions) run(cmd *cobra.Command, args []string) {
 		Follow:            r.follow,
 		WithMeta:          r.printMeta,
 		MessagesCount:     r.messagesCount,
-		FromTime:          command.ParseTime(r.fromAt),
-		ToTime:            command.ParseTime(r.toAt),
+		FromTime:          common.ParseTime(r.fromAt),
+		ToTime:            common.ParseTime(r.toAt),
 	})
 
 }
@@ -66,7 +66,7 @@ func (r *replicateOptions) setupProtoDescriptorRegistry(cmd *cobra.Command, args
 	if r.protoType != "" {
 		reg, err := serializers.NewDescriptorRegistry(r.protoFiles, r.protoExclude)
 		if err != nil {
-			command.ExitWithErr("Failed to load protobuf files: %v\n", err)
+			common.ExitWithErr("Failed to load protobuf files: %v\n", err)
 		}
 
 		r.protoRegistry = reg

@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/worldbug/kafeman/internal/command"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/common"
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
@@ -85,15 +85,15 @@ type consumeOptions struct {
 func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 	topic := args[0]
 
-	offset := command.GetOffsetFromFlag(c.offset)
+	offset := common.GetOffsetFromFlag(c.offset)
 
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 
-	topicConfig, _ := global_config.GetTopicByName(topic)
+	topicConfig, _ := run_configuration.GetTopicByName(topic)
 	topicConfig.ProtoType = utils.OrDefault(c.protoType, topicConfig.ProtoType)
 	topicConfig.ProtoPaths = utils.OrDefaultSlice(c.protoFiles, topicConfig.ProtoPaths)
 	topicConfig.ProtoExcludePaths = utils.OrDefaultSlice(c.protoExclude, topicConfig.ProtoExcludePaths)
-	global_config.SetTopic(topicConfig)
+	run_configuration.SetTopic(topicConfig)
 
 	kafemanCommand := kafeman.ConsumeCommand{
 		Topic:          topic,
@@ -104,18 +104,18 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 		Follow:         c.follow,
 		WithMeta:       c.printMeta,
 		MessagesCount:  c.messagesCount,
-		FromTime:       command.ParseTime(c.fromAt),
-		ToTime:         command.ParseTime(c.toAt),
+		FromTime:       common.ParseTime(c.fromAt),
+		ToTime:         common.ParseTime(c.toAt),
 	}
 
 	decoder, err := c.getDecoder(kafemanCommand)
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("%+v", err)
 	}
 
 	messages, err := k.Consume(cmd.Context(), kafemanCommand, decoder)
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("%+v", err)
 	}
 
 	for message := range messages {
@@ -124,7 +124,7 @@ func (c *consumeOptions) run(cmd *cobra.Command, args []string) {
 }
 
 func (c *consumeOptions) getDecoder(cmd kafeman.ConsumeCommand) (kafeman.Decoder, error) {
-	topicConfig, ok := global_config.GetTopicByName(cmd.Topic)
+	topicConfig, ok := run_configuration.GetTopicByName(cmd.Topic)
 	if !ok && c.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}
@@ -172,7 +172,7 @@ func printMessage(message models.Message, out io.Writer, printMeta bool) {
 }
 
 func Print(data models.Message, out io.Writer) {
-	if command.IsJSON(data.Value) {
+	if common.IsJSON(data.Value) {
 		ms := messageToPrintable(data)
 		v := ms.Value
 		ms.Value = ""
@@ -212,7 +212,7 @@ func messageToPrintable(msg models.Message) PrintableMessage {
 }
 
 // func (c *consumeOptions) setupProtoDescriptorRegistry(topic string) {
-// 	topicConfig, _ := global_config.GetTopicByName(topic)
+// 	topicConfig, _ := run_configuration.GetTopicByName(topic)
 //
 // 	protoFiles := topicConfig.ProtoPaths
 // 	var protoExclude []string

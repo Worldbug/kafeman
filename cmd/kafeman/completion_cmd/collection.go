@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/worldbug/kafeman/cmd/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
 )
@@ -14,9 +14,9 @@ import (
 func NewClusterCompletion() completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
-		clusters := make([]string, 0, len(global_config.Config.Clusters))
+		clusters := make([]string, 0, len(run_configuration.Config.Clusters))
 
-		for _, cluster := range global_config.Config.Clusters {
+		for _, cluster := range run_configuration.Config.Clusters {
 			clusters = append(clusters, cluster.Name)
 		}
 
@@ -34,7 +34,7 @@ func NewEncodingCompletion() completionFunc {
 func NewGroupCompletion() completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
-		list, _ := kafeman.Newkafeman(global_config.Config).GetGroupsList(cmd.Context())
+		list, _ := kafeman.Newkafeman(run_configuration.Config).GetGroupsList(cmd.Context())
 		return list, cobra.ShellCompDirectiveNoFileComp
 	}
 }
@@ -71,7 +71,7 @@ func NewTopicCompletion() completionFunc {
 		[]string, cobra.ShellCompDirective) {
 		topicsSuggest := make([]string, 0)
 
-		topics, err := kafeman.Newkafeman(global_config.Config).ListTopics(cmd.Context())
+		topics, err := kafeman.Newkafeman(run_configuration.Config).ListTopics(cmd.Context())
 		if err != nil {
 			return topicsSuggest, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -92,7 +92,7 @@ func NewReplicationCompletion() completionFunc {
 		suggest := make([]string, 0)
 
 		if firstPart(args, toComplete) {
-			for _, cluster := range global_config.Config.Clusters {
+			for _, cluster := range run_configuration.Config.Clusters {
 				suggest = append(suggest, cluster.Name+"/")
 			}
 
@@ -101,9 +101,9 @@ func NewReplicationCompletion() completionFunc {
 
 		if secondPart(args, toComplete) {
 			cluster := strings.Split(toComplete, "/")[0]
-			global_config.Config.CurrentCluster = cluster
+			run_configuration.Config.CurrentCluster = cluster
 
-			topics, err := kafeman.Newkafeman(global_config.Config).ListTopics(cmd.Context())
+			topics, err := kafeman.Newkafeman(run_configuration.Config).ListTopics(cmd.Context())
 			if err != nil {
 				return suggest, cobra.ShellCompDirectiveNoFileComp
 			}

@@ -8,8 +8,6 @@ type Configuration struct {
 	CurrentCluster string    `yaml:"current_cluster"`
 	Clusters       []Cluster `yaml:"clusters"`
 	Topics         []Topic   `yaml:"topics"`
-	Quiet          bool      `yaml:"-"`
-	FailTolerance  bool      `yaml:"-"`
 }
 
 func (c *Configuration) SetCurrentCluster(name string) bool {

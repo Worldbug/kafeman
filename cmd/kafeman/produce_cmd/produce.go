@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
-	"github.com/worldbug/kafeman/internal/command/global_config"
-	"github.com/worldbug/kafeman/internal/utils"
-
-	"github.com/worldbug/kafeman/internal/command"
+	"github.com/worldbug/kafeman/cmd/kafeman/common"
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
+	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -24,11 +23,11 @@ func NewProduceExampleCMD() *cobra.Command {
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completion_cmd.NewTopicCompletion(),
 		Run: func(cmd *cobra.Command, args []string) {
-			topic, _ := global_config.GetTopicByName(args[0])
+			topic, _ := run_configuration.GetTopicByName(args[0])
 			// TODO: add other encoders support
 			decoder, err := serializers.NewProtobufSerializer(topic.ProtoPaths, topic.ProtoExcludePaths, topic.ProtoType)
 			if err != nil {
-				command.ExitWithErr("%+v", err)
+				common.ExitWithErr("%+v", err)
 			}
 			example := decoder.GetExample(topic.ProtoType)
 			// TODO: сделать заполнение семпла базовыми данными
@@ -60,7 +59,7 @@ type produceOptions struct {
 }
 
 func (p *produceOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 
 	produceCommand := kafeman.ProduceCommand{
 		Topic:       args[0],
@@ -71,22 +70,22 @@ func (p *produceOptions) run(cmd *cobra.Command, args []string) {
 		Partitioner: p.partitioner,
 	}
 
-	topicConfig, _ := global_config.GetTopicByName(args[0])
+	topicConfig, _ := run_configuration.GetTopicByName(args[0])
 	topicConfig.ProtoType = utils.OrDefault(p.protoType, topicConfig.ProtoType)
 	topicConfig.ProtoPaths = utils.OrDefaultSlice(p.protoFiles, topicConfig.ProtoPaths)
 	topicConfig.ProtoExcludePaths = utils.OrDefaultSlice(p.protoExclude, topicConfig.ProtoExcludePaths)
-	global_config.SetTopic(topicConfig)
+	run_configuration.SetTopic(topicConfig)
 
 	encoder, err := p.getEncoder(produceCommand)
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("%+v", err)
 	}
 
 	k.Produce(cmd.Context(), produceCommand, encoder)
 }
 
 func (p *produceOptions) getEncoder(cmd kafeman.ProduceCommand) (kafeman.Encoder, error) {
-	topicConfig, ok := global_config.GetTopicByName(cmd.Topic)
+	topicConfig, ok := run_configuration.GetTopicByName(cmd.Topic)
 	if !ok && p.encoding == "" {
 		return serializers.NewRawSerializer(), nil
 	}

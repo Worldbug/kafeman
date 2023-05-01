@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
+	"github.com/worldbug/kafeman/internal/logger"
 )
 
 var (
@@ -20,10 +21,9 @@ func NewKafemanCMD() *cobra.Command {
 		Version: fmt.Sprintf("%s (%s)", version, commit),
 	}
 
-	// cmd.PersistentFlags().StringVar(&config.ConfigPath, "config", "", "config file (default is $HOME/.kafeman/config.yaml)")
-	cmd.PersistentFlags().StringVarP(&global_config.Config.CurrentCluster, "cluster", "c", global_config.GetCurrentCluster().Name, "set a temporary current cluster")
-	cmd.PersistentFlags().BoolVar(&global_config.Config.FailTolerance, "tolerance", false, "don't crash on errors")
-	cmd.PersistentFlags().BoolVar(&global_config.Config.Quiet, "quiet", false, "do not print info and errors")
+	cmd.PersistentFlags().StringVarP(&run_configuration.Config.CurrentCluster, "cluster", "c", run_configuration.GetCurrentCluster().Name, "set a temporary current cluster")
+	cmd.PersistentFlags().BoolVar(&logger.FailTolerance, "tolerance", false, "don't crash on errors")
+	cmd.PersistentFlags().BoolVar(&logger.Quiet, "quiet", false, "do not print info and errors")
 	cmd.RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion())
 
 	return cmd

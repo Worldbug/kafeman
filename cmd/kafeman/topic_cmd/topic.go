@@ -9,9 +9,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/worldbug/kafeman/cmd/kafeman/common"
 	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
-	"github.com/worldbug/kafeman/internal/command"
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
@@ -40,7 +40,7 @@ func NewTopicCMD() *cobra.Command {
 func newDescribeOptions() *describeOptions {
 	return &describeOptions{
 		out:              os.Stdout,
-		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		PrettyPrintFlags: common.NewPrettyPrintFlags(),
 	}
 }
 
@@ -61,16 +61,16 @@ func NewDescribeCMD() *cobra.Command {
 }
 
 type describeOptions struct {
-	command.PrettyPrintFlags
+	common.PrettyPrintFlags
 	out    io.Writer
 	asJson bool
 }
 
 func (d *describeOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	topicInfo, err := k.DescribeTopic(cmd.Context(), args[0])
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("", err)
 	}
 
 	if d.asJson {
@@ -127,26 +127,26 @@ func (d *describeOptions) describeTopicPrint(topicInfo models.TopicInfo) {
 func newLSTopicsOptions() *lsTopicsOptions {
 	return &lsTopicsOptions{
 		out:              os.Stdout,
-		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		PrettyPrintFlags: common.NewPrettyPrintFlags(),
 	}
 }
 
 type lsTopicsOptions struct {
-	command.PrettyPrintFlags
+	common.PrettyPrintFlags
 	out    io.Writer
 	asJson bool
 }
 
 func (l *lsTopicsOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 
 	topics, err := k.ListTopics(cmd.Context())
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("%+v", err)
 	}
 
 	if l.asJson {
-		command.PrintJson(topics)
+		common.PrintJson(topics)
 		return
 	}
 
@@ -194,7 +194,7 @@ func NewLSTopicsCMD() *cobra.Command {
 func newTopicConsumersOptions() *topicConsumersOptions {
 	return &topicConsumersOptions{
 		out:              os.Stdout,
-		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		PrettyPrintFlags: common.NewPrettyPrintFlags(),
 	}
 }
 
@@ -202,18 +202,18 @@ type topicConsumersOptions struct {
 	asJson bool
 	out    io.Writer
 
-	command.PrettyPrintFlags
+	common.PrettyPrintFlags
 }
 
 func (t *topicConsumersOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	consumers, err := k.ListTopicConsumers(cmd.Context(), args[0])
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("%+v", err)
 	}
 
 	if t.asJson {
-		command.PrintJson(consumers)
+		common.PrintJson(consumers)
 		return
 	}
 
@@ -265,7 +265,7 @@ type deleteTopicOptions struct {
 func (d *deleteTopicOptions) run(cmd *cobra.Command, args []string) {
 	topic := args[0]
 
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	err := k.DeleteTopic(cmd.Context(), topic)
 	if err != nil {
 		os.Exit(1)
@@ -297,7 +297,7 @@ type topicSetOptions struct {
 }
 
 func (t *topicSetOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 
 	topic := args[0]
 
@@ -356,17 +356,17 @@ type updateTopicOptions struct {
 }
 
 func (u *updateTopicOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	topic := args[0]
 
 	if u.partitions == -1 && u.partitionAssignments == "" {
-		command.ExitWithErr("Number of partitions and/or partition assignments must be given")
+		common.ExitWithErr("Number of partitions and/or partition assignments must be given")
 	}
 
 	var assignments [][]int32
 	if u.partitionAssignments != "" {
 		if err := json.Unmarshal([]byte(u.partitionAssignments), &assignments); err != nil {
-			command.ExitWithErr("Invalid partition assignments: %v", err)
+			common.ExitWithErr("Invalid partition assignments: %v", err)
 		}
 	}
 
@@ -402,13 +402,13 @@ func NewUpdateTopicCmd() *cobra.Command {
 
 func newCreateTopicOptions() *createTopicOptions {
 	return &createTopicOptions{
-		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		PrettyPrintFlags: common.NewPrettyPrintFlags(),
 		out:              os.Stdout,
 	}
 }
 
 type createTopicOptions struct {
-	command.PrettyPrintFlags
+	common.PrettyPrintFlags
 	out io.Writer
 
 	// TODO:
@@ -419,7 +419,7 @@ type createTopicOptions struct {
 }
 
 func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	topic := args[0]
 
 	cleanupPolicy := "delete"
@@ -434,7 +434,7 @@ func (c *createTopicOptions) run(cmd *cobra.Command, args []string) {
 		CleanupPolicy:     cleanupPolicy,
 	})
 	if err != nil {
-		command.ExitWithErr("Could not create topic %v: %v\n", topic, err.Error())
+		common.ExitWithErr("Could not create topic %v: %v\n", topic, err.Error())
 	}
 	w := tabwriter.NewWriter(c.out, c.MinWidth, c.Width, c.Padding, c.PadChar, c.Flags)
 	defer w.Flush()
@@ -471,7 +471,7 @@ type addConfigOptions struct {
 }
 
 func (a *addConfigOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 
 	topic := args[0]
 	key := args[1]

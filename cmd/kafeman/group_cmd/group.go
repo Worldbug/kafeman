@@ -7,9 +7,9 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/worldbug/kafeman/internal/command"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/common"
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/models"
 
@@ -50,7 +50,7 @@ type groupDeleteOptions struct {
 }
 
 func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 
 	var group string
 	if len(args) == 1 {
@@ -59,7 +59,7 @@ func (g *groupDeleteOptions) run(cmd *cobra.Command, args []string) {
 
 	err := k.DeleteGroup(group)
 	if err != nil {
-		command.ExitWithErr("Could not delete consumer group %v: %v", group, err.Error())
+		common.ExitWithErr("Could not delete consumer group %v: %v", group, err.Error())
 	}
 
 	fmt.Fprintf(os.Stdout, "Deleted consumer group %v.\n", group)
@@ -83,7 +83,7 @@ func NewGroupDeleteCMD() *cobra.Command {
 func newGroupLsOptions() *groupLSOptions {
 	return &groupLSOptions{
 		out:              os.Stdout,
-		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		PrettyPrintFlags: common.NewPrettyPrintFlags(),
 	}
 }
 
@@ -92,24 +92,24 @@ type groupLSOptions struct {
 
 	out io.Writer
 
-	command.PrettyPrintFlags
+	common.PrettyPrintFlags
 }
 
 func (g *groupLSOptions) run(cmd *cobra.Command, args []string) {
 	// TODO: надо тут поправить
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	groupList, err := k.GetGroupsList(cmd.Context())
 	if err != nil {
-		command.ExitWithErr("%+v", err)
+		common.ExitWithErr("%+v", err)
 	}
 
 	groupDescs, err := k.DescribeGroups(cmd.Context(), groupList)
 	if err != nil {
-		command.ExitWithErr("Unable to describe consumer groups: %v\n", err)
+		common.ExitWithErr("Unable to describe consumer groups: %v\n", err)
 	}
 
 	if g.asJson {
-		command.PrintJson(groupDescs)
+		common.PrintJson(groupDescs)
 		return
 	}
 
@@ -148,7 +148,7 @@ func NewGroupLSCMD() *cobra.Command {
 
 func newGroupDescribeOptions() *groupDescribeOptions {
 	return &groupDescribeOptions{
-		PrettyPrintFlags: command.NewPrettyPrintFlags(),
+		PrettyPrintFlags: common.NewPrettyPrintFlags(),
 		out:              os.Stdout,
 	}
 }
@@ -159,15 +159,15 @@ type groupDescribeOptions struct {
 
 	out io.Writer
 
-	command.PrettyPrintFlags
+	common.PrettyPrintFlags
 }
 
 func (g *groupDescribeOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	group := k.DescribeGroup(cmd.Context(), args[0])
 
 	if g.asJson {
-		command.PrintJson(group)
+		common.PrintJson(group)
 		return
 	}
 
@@ -244,7 +244,7 @@ type groupCommitOptions struct {
 }
 
 func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
-	k := kafeman.Newkafeman(global_config.Config)
+	k := kafeman.Newkafeman(run_configuration.Config)
 	group := args[0]
 	offsets := make([]models.Offset, 0)
 	// partitions := make([]int, 0)
@@ -256,10 +256,10 @@ func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
 	if g.allPartitions {
 		t, err := k.GetTopicInfo(cmd.Context(), g.topic)
 		if err != nil {
-			command.ExitWithErr("%+v", err)
+			common.ExitWithErr("%+v", err)
 		}
 
-		o := command.GetOffsetFromFlag(g.offset)
+		o := common.GetOffsetFromFlag(g.offset)
 		for i := t.Partitions - 1; i >= 0; i-- {
 			offsets = append(offsets, models.Offset{
 				Partition: int32(i),
