@@ -210,25 +210,3 @@ func messageToPrintable(msg models.Message) PrintableMessage {
 		Value: string(msg.Value),
 	}
 }
-
-// func (c *consumeOptions) setupProtoDescriptorRegistry(topic string) {
-// 	topicConfig, _ := run_configuration.GetTopicByName(topic)
-//
-// 	protoFiles := topicConfig.ProtoPaths
-// 	var protoExclude []string
-//
-// 	if len(c.protoFiles) != 0 {
-// 		protoFiles = c.protoFiles
-// 	}
-//
-// 	if len(c.protoExclude) != 0 {
-// 		protoExclude = c.protoFiles
-// 	}
-//
-// 	r, err := serializers.NewDescriptorRegistry(protoFiles, protoExclude)
-// 	if err != nil {
-// 		logger.Errorf("Failed to load protobuf files: %v\n", err)
-// 	}
-//
-// 	c.protoRegistry = r
-// }
