@@ -129,7 +129,7 @@ func (c *Consumer) asyncConsume(ctx context.Context, cp sarama.PartitionConsumer
 				return nil
 			}
 
-			if !c.toTime.IsZero() && msg.Timestamp.After(c.toTime) {
+			if c.toTime.Unix() != 0 && msg.Timestamp.After(c.toTime) {
 				return nil
 			}
 
@@ -226,7 +226,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				continue
 			}
 
-			if !c.toTime.IsZero() && msg.Timestamp.After(c.toTime) {
+			if c.toTime.Unix() != 0 && msg.Timestamp.After(c.toTime) {
 				return nil
 			}
 
