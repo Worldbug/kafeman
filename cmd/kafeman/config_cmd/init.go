@@ -13,9 +13,8 @@ import (
 func NewConfigInitCMD(configPath string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Create empty config and export to file (default ~/.kafeman/config.yaml)",
+		Short: fmt.Sprintf("Create empty config and export to file (default %s)\n", run_configuration.ConfigPath),
 		Run: func(cmd *cobra.Command, args []string) {
-			// TODO: FIXME: config path
 			run_configuration.Config = &config.Configuration{
 				CurrentCluster: "local",
 				Clusters: []config.Cluster{
@@ -31,7 +30,7 @@ func NewConfigInitCMD(configPath string) *cobra.Command {
 				common.ExitWithErr("Can`t save config: %+v", err)
 			}
 
-			fmt.Fprintf(os.Stdout, "Config created in ~/.config/kafeman/config.yaml\n")
+			fmt.Fprintf(os.Stdout, "Config created in %s\n", run_configuration.ConfigPath)
 		},
 	}
 

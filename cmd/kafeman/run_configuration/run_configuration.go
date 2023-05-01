@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var ConfigPath = getDefaultConfigPath()
+var ConfigPath = GetDefaultConfigPath()
 var Config = readConfiguration()
 
 func SetCurrentCluster(name string) bool {
@@ -70,7 +70,7 @@ func WriteConfiguration() error {
 	return nil
 }
 
-func getDefaultConfigPath() string {
+func GetDefaultConfigPath() string {
 	home, err := homedir.Dir()
 	if err != nil {
 		panic(err)
