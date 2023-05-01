@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/global_config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/serializers"
 )

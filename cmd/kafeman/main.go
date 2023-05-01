@@ -5,6 +5,14 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/config_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/consume_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/group_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/kafeman_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/produce_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/replicate_cmd"
+	"github.com/worldbug/kafeman/cmd/kafeman/topic_cmd"
 )
 
 func main() {

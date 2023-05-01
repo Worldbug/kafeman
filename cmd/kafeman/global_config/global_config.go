@@ -1,4 +1,4 @@
-package global_config
+package common
 
 import (
 	"os"

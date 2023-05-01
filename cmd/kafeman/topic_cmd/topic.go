@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
 	"github.com/worldbug/kafeman/internal/command"
-	completion_cmd "github.com/worldbug/kafeman/internal/command/completion"
 	"github.com/worldbug/kafeman/internal/command/global_config"
 	"github.com/worldbug/kafeman/internal/kafeman"
 	"github.com/worldbug/kafeman/internal/logger"
