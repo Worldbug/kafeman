@@ -33,7 +33,7 @@ func NewConfigCMD() *cobra.Command {
 	// ConfigCMD.AddCommand(configAddClusterCmd)
 	// ConfigCMD.AddCommand(configRemoveClusterCmd)
 	cmd.AddCommand(NewConfigSetCluster(configPath))
-	cmd.AddCommand(NewConfigCurrentContextCMD(configPath))
+	cmd.AddCommand(NewConfigCurrentClusterCMD(configPath))
 	// ConfigCMD.AddCommand(configAddEventhub)
 
 	cmd.AddCommand(NewConfigInitCMD(configPath))

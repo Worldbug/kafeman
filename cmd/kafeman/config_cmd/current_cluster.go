@@ -8,10 +8,10 @@ import (
 	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 )
 
-func NewConfigCurrentContextCMD(configPath string) *cobra.Command {
+func NewConfigCurrentClusterCMD(configPath string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "current-context",
-		Short: "Displays the current context",
+		Use:   "current-cluster",
+		Short: "Displays the current cluster",
 		Args:  cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(os.Stdout, "%s\n", run_configuration.GetCurrentCluster().Name)
