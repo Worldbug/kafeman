@@ -78,7 +78,7 @@ clusters:
   brokers:
   - localhost:9092
 topics:
-  my-topic-1:
+  - name: my-topic-1
     proto_type: myTopic.Event
     proto_paths:
     - project/protos
@@ -112,12 +112,12 @@ See also [usages examples](examples/usages.md)
 ✅| partitions
 ✅| raw                     
 ✅| tail
-✔️| key-proto-type
-✔️| proto-include
-✔️| proto-type
-❌| limit-messages
-❌| proto-exclude 
-❌| decode-msgpack
+✅| key-proto-type
+✅| proto-include
+✅| proto-type
+✅| proto-exclude 
+✅| limit-messages
+✅| decode-msgpack
 
 ### group
 |kafeman|kaf|
