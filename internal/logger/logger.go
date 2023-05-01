@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/worldbug/kafeman/internal/command/global_config"
+	"github.com/worldbug/kafeman/cmd/kafeman/command/global_config"
 )
 
 func Infof(format string, a ...any) {
