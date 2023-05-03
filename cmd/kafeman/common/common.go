@@ -85,10 +85,7 @@ func GetOffsetFromFlag(offsetFlag string) int64 {
 
 func IsJSON(data []byte) bool {
 	var i interface{}
-	if err := json.Unmarshal(data, &i); err == nil {
-		return true
-	}
-	return false
+	return json.Unmarshal(data, &i) == nil
 }
 
 func ParseTime(str string) time.Time {
