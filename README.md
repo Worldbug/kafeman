@@ -1,4 +1,6 @@
 # kafeman
+![kafeman_logo](logo/logo.png)
+
 kaf inspired cli for kafka management
 * Optimizations for fast performance in large kafka clusters
 * Simplified work with proto in topics
