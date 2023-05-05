@@ -34,6 +34,9 @@ func NewEncodingCompletion() completionFunc {
 func NewGroupCompletion() completionFunc {
 	return func(cmd *cobra.Command, args []string, toComplete string) (
 		[]string, cobra.ShellCompDirective) {
+		cluster := cmd.Flags().Lookup("cluster").Value.String()
+		run_configuration.SetCurrentCluster(cluster)
+
 		list, _ := kafeman.Newkafeman(run_configuration.Config).GetGroupsList(cmd.Context())
 		return list, cobra.ShellCompDirectiveNoFileComp
 	}

@@ -13,12 +13,13 @@ func NewGroupCommitCMD() *cobra.Command {
 	options := newGroupCommitOptions()
 
 	cmd := &cobra.Command{
-		Use:     "commit",
-		Short:   "Set offset for given consumer group",
-		Long:    "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
-		Example: "kafeman group commit group_name -t topic_name --all-partitions  --offset 100500",
-		Args:    cobra.ExactArgs(1),
-		Run:     options.run,
+		Use:               "commit",
+		Short:             "Set offset for given consumer group",
+		Long:              "Set offset for a given consumer group, creates one if it does not exist. Offsets cannot be set on a consumer group with active consumers.",
+		Example:           "kafeman group commit group_name -t topic_name --all-partitions  --offset 100500",
+		Args:              cobra.ExactArgs(1),
+		Run:               options.run,
+		ValidArgsFunction: completion_cmd.NewGroupCompletion(),
 	}
 
 	cmd.Flags().BoolVar(&options.fromJson, "json", false, "Parse json from std and set values")
