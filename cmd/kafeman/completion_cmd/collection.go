@@ -71,6 +71,9 @@ func NewTopicCompletion() completionFunc {
 		[]string, cobra.ShellCompDirective) {
 		topicsSuggest := make([]string, 0)
 
+		cluster := cmd.Flags().Lookup("cluster").Value.String()
+		run_configuration.SetCurrentCluster(cluster)
+
 		topics, err := kafeman.Newkafeman(run_configuration.Config).ListTopics(cmd.Context())
 		if err != nil {
 			return topicsSuggest, cobra.ShellCompDirectiveNoFileComp

@@ -15,25 +15,50 @@ var (
 )
 
 func NewKafemanCMD() *cobra.Command {
-	defaultConfigPath := run_configuration.GetDefaultConfigPath()
+	options := newKafemanOptions()
+
 	cmd := &cobra.Command{
-		Use:     "kafeman",
-		Short:   "Kafka Command Line utility",
-		Version: fmt.Sprintf("%s (%s)", version, commit),
-		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			if defaultConfigPath != run_configuration.GetDefaultConfigPath() {
-				// при использовании нестандартного конфига
-				// -с не работает
-				run_configuration.ReadConfiguration()
-			}
-		},
+		Use:              "kafeman",
+		Short:            "Kafka Command Line utility",
+		Version:          fmt.Sprintf("%s (%s)", version, commit),
+		PersistentPreRun: options.preRun,
 	}
 
-	cmd.PersistentFlags().StringVar(&run_configuration.ConfigPath, "config", defaultConfigPath, "set a temporary kafeman config file")
-	cmd.PersistentFlags().StringVarP(&run_configuration.Config.CurrentCluster, "cluster", "c", run_configuration.GetCurrentCluster().Name, "set a temporary current cluster")
-	cmd.PersistentFlags().BoolVar(&logger.FailTolerance, "tolerance", false, "don't crash on errors")
-	cmd.PersistentFlags().BoolVar(&logger.Quiet, "quiet", false, "do not print info and errors")
+	cmd.PersistentFlags().StringVar(&options.ConfigPath, "config", run_configuration.GetDefaultConfigPath(), "set a temporary kafeman config file")
+	cmd.PersistentFlags().StringVarP(&options.CurrentCluster, "cluster", "c", run_configuration.GetCurrentCluster().Name, "set a temporary current cluster")
+	cmd.PersistentFlags().BoolVar(&options.FailTolerance, "tolerance", false, "don't crash on errors")
+	cmd.PersistentFlags().BoolVar(&options.Quiet, "quiet", false, "do not print info and errors")
 	cmd.RegisterFlagCompletionFunc("cluster", completion_cmd.NewClusterCompletion())
 
 	return cmd
+}
+
+func newKafemanOptions() *kafemanOptions {
+	return &kafemanOptions{
+		FailTolerance:  false,
+		Quiet:          false,
+		CurrentCluster: run_configuration.GetCurrentCluster().Name,
+		ConfigPath:     run_configuration.GetDefaultConfigPath(),
+	}
+}
+
+type kafemanOptions struct {
+	FailTolerance  bool
+	Quiet          bool
+	CurrentCluster string
+	ConfigPath     string
+}
+
+func (options *kafemanOptions) preRun(cmd *cobra.Command, args []string) {
+	logger.FailTolerance = options.FailTolerance
+	logger.Quiet = options.Quiet
+
+	if options.ConfigPath != run_configuration.GetDefaultConfigPath() {
+		run_configuration.ConfigPath = options.ConfigPath
+		run_configuration.ReadConfiguration()
+	}
+
+	if options.CurrentCluster != run_configuration.GetCurrentCluster().Name {
+		run_configuration.SetCurrentCluster(options.CurrentCluster)
+	}
 }
