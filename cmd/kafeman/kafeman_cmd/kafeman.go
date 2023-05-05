@@ -15,16 +15,21 @@ var (
 )
 
 func NewKafemanCMD() *cobra.Command {
+	defaultConfigPath := run_configuration.GetDefaultConfigPath()
 	cmd := &cobra.Command{
 		Use:     "kafeman",
 		Short:   "Kafka Command Line utility",
 		Version: fmt.Sprintf("%s (%s)", version, commit),
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			run_configuration.ReadConfiguration()
+			if defaultConfigPath != run_configuration.GetDefaultConfigPath() {
+				// при использовании нестандартного конфига
+				// -с не работает
+				run_configuration.ReadConfiguration()
+			}
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&run_configuration.ConfigPath, "config", run_configuration.GetDefaultConfigPath(), "set a temporary kafeman config file")
+	cmd.PersistentFlags().StringVar(&run_configuration.ConfigPath, "config", defaultConfigPath, "set a temporary kafeman config file")
 	cmd.PersistentFlags().StringVarP(&run_configuration.Config.CurrentCluster, "cluster", "c", run_configuration.GetCurrentCluster().Name, "set a temporary current cluster")
 	cmd.PersistentFlags().BoolVar(&logger.FailTolerance, "tolerance", false, "don't crash on errors")
 	cmd.PersistentFlags().BoolVar(&logger.Quiet, "quiet", false, "do not print info and errors")

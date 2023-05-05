@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/internal/consumer"
 	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
@@ -42,8 +43,7 @@ func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand, decoder Decod
 
 	messages, err := c.StartConsume(ctx)
 	if err != nil {
-		// TODO: add possible errors
-		return nil, ErrNoTopicProvided
+		return nil, errors.Wrap(err, "Start consume error:")
 	}
 
 	output := make(chan models.Message)
