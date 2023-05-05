@@ -1,5 +1,5 @@
 # kafeman
-![kafeman_logo](logo/logo.png)
+![kafeman_logo](logo/logo_src.svg)
 
 kaf inspired cli for kafka management
 * Optimizations for fast performance in large kafka clusters
