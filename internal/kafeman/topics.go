@@ -3,6 +3,7 @@ package kafeman
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/logger"
@@ -136,4 +137,19 @@ func (k *kafeman) AddConfigRecord(ctx context.Context, command AddConfigRecordCo
 	}
 
 	return err
+}
+
+func (k *kafeman) ListTopics(ctx context.Context) ([]models.Topic, error) {
+	adm := admin.NewAdmin(k.config)
+
+	topics, err := adm.ListTopics(ctx)
+	if err != nil {
+		return []models.Topic{}, err
+	}
+
+	sort.Slice(topics, func(i int, j int) bool {
+		return topics[i].Name < topics[j].Name
+	})
+
+	return topics, nil
 }

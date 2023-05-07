@@ -6,17 +6,12 @@ import (
 )
 
 var (
-	failTolerance = false
-	quiet         = false
+	Quiet         bool
+	FailTolerance bool
 )
 
-func InitLogger(f, q bool) {
-	failTolerance = f
-	quiet = q
-}
-
 func Infof(format string, a ...any) {
-	if quiet {
+	if Quiet {
 		return
 	}
 
@@ -24,7 +19,7 @@ func Infof(format string, a ...any) {
 }
 
 func Errorf(format string, a ...any) {
-	if quiet {
+	if Quiet {
 		return
 	}
 
@@ -33,7 +28,7 @@ func Errorf(format string, a ...any) {
 
 func Fatalf(format string, a ...any) {
 	Errorf(format, a...)
-	if !failTolerance {
+	if !FailTolerance {
 		os.Exit(1)
 	}
 }

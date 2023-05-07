@@ -1,122 +1,107 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-
-	"github.com/mitchellh/go-homedir"
-	"gopkg.in/yaml.v2"
+	"github.com/worldbug/kafeman/internal/utils"
 )
+
+type Configuration struct {
+	CurrentCluster string    `yaml:"current_cluster"`
+	Clusters       []Cluster `yaml:"clusters"`
+	Topics         []Topic   `yaml:"topics"`
+}
+
+func (c *Configuration) SetCurrentCluster(name string) bool {
+	_, ok := c.GetClusterByName(name)
+	if !ok {
+		return false
+	}
+
+	c.CurrentCluster = name
+	return true
+}
+
+func (c *Configuration) GetCurrentCluster() Cluster {
+	cluster, ok := c.GetClusterByName(c.CurrentCluster)
+	if !ok {
+		return Cluster{}
+	}
+
+	return cluster
+}
+
+func (c *Configuration) GetClusterByName(name string) (Cluster, bool) {
+	cluster, ok := utils.SliceToMap(c.Clusters, Cluster.GetName)[name]
+	return cluster, ok
+}
+
+func (c *Configuration) SetCluster(cluster Cluster) {
+	clusters := utils.SliceToMap(c.Clusters, Cluster.GetName)
+	clusters[cluster.GetName()] = cluster
+	c.Clusters = utils.MapToSlice(clusters)
+}
+
+func (c *Configuration) GetTopicByName(name string) (Topic, bool) {
+	topic, ok := utils.SliceToMap(c.Topics, Topic.GetName)[name]
+	return topic, ok
+}
+
+func (c *Configuration) SetTopic(topic Topic) {
+	topics := utils.SliceToMap(c.Topics, Topic.GetName)
+	topics[topic.GetName()] = topic
+	c.Topics = utils.MapToSlice(topics)
+}
+
+type Cluster struct {
+	Name              string   `yaml:"name,omitempty"`
+	Brokers           []string `yaml:"brokers,omitempty"`
+	Version           string   `yaml:"version,omitempty"`
+	SASL              *SASL    `yaml:"sasl,omitempty"`
+	TLS               *TLS     `yaml:"tls,omitempty"`
+	SecurityProtocol  string   `yaml:"security_protocol,omitempty"`
+	SchemaRegistryURL string   `yaml:"schema_registry_url,omitempty"`
+}
+
+func (c Cluster) GetName() string {
+	return c.Name
+}
+
+type SASL struct {
+	Mechanism    string `yaml:"mechanism,omitempty"`
+	Username     string `yaml:"username,omitempty"`
+	Password     string `yaml:"password,omitempty"`
+	ClientID     string `yaml:"client_id,omitempty"`
+	ClientSecret string `yaml:"client_secret,omitempty"`
+	TokenURL     string `yaml:"token_url,omitempty"`
+	Token        string `yaml:"token,omitempty"`
+}
+
+type TLS struct {
+	Cafile        string `yaml:"cafile,omitempty"`
+	Clientfile    string `yaml:"clientfile,omitempty"`
+	Clientkeyfile string `yaml:"clientkeyfile,omitempty"`
+	Insecure      bool   `yaml:"insecure,omitempty"`
+}
+
+type Encoding string
 
 const (
-	defaultConfigDir  = `/.config/kafeman`
-	defaultConfigName = "config.yml"
+	MSGPack  Encoding = "msgpack"
+	Protobuf Encoding = "protobuf"
+	Avro     Encoding = "avro"
+	RAW      Encoding = "raw"
+	Base64   Encoding = "base64"
 )
 
-type Config struct {
-	CurrentCluster string           `yaml:"current_cluster"`
-	Clusters       Clusters         `yaml:"clusters"`
-	Topics         map[string]Topic `yaml:"topics"`
+type Topic struct {
+	Name              string   `yaml:"name"`
+	Encoding          Encoding `yaml:"encoding,omitempty"`
+	ProtoType         string   `yaml:"proto_type,omitempty"`
+	ProtoPaths        []string `yaml:"proto_paths,omitempty"`
+	ProtoExcludePaths []string `yaml:"proto_exclude_paths,omitempty"`
+	AvroSchemaURL     string   `yaml:"avro_schema_url,omitempty"`
+	AvroSchemaID      int      `yaml:"avro_schema_id,omitempty"`
 }
 
-func (c *Config) GetCurrentCluster() Cluster {
-	for _, cluster := range c.Clusters {
-		if cluster.Name == c.CurrentCluster {
-			return cluster
-		}
-	}
-
-	return Cluster{}
-}
-
-func (c *Config) SetCurrentCluster(name string) {
-	c.CurrentCluster = name
-}
-
-func GenerateConfig() Config {
-	return Config{
-		CurrentCluster: "prod",
-		Clusters: Clusters{
-			Cluster{
-				Name: "prod",
-				Brokers: []string{
-					"broker_1:9092",
-					"broker_2:9092",
-					"broker_3:9092",
-				},
-			},
-		},
-		Topics: map[string]Topic{
-			"service_topic": {
-				ProtoType: "service_event",
-				ProtoPaths: []string{
-					"./service_protos/",
-					"./additional_protos/",
-				},
-			},
-		},
-	}
-}
-
-func LoadConfig(configPath string) (Config, error) {
-	cfg := Config{}
-
-	path := valueOrDefault(configPath, getDefaultConfigPath())
-	file, err := os.OpenFile(path, os.O_RDONLY, 0644)
-	if err != nil {
-		return cfg, err
-	}
-
-	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&cfg)
-
-	return cfg, err
-}
-
-func ExportConfig(path string) error {
-	c := GenerateConfig()
-	return SaveConfig(c, path)
-}
-
-func SaveConfig(config Config, path string) error {
-	if path == "" {
-		home, err := homedir.Dir()
-		if err != nil {
-			return err
-		}
-
-		configDir := filepath.Join(home, defaultConfigDir)
-		err = os.MkdirAll(configDir, 0755)
-		if err != nil {
-			return err
-		}
-
-		path = filepath.Join(configDir, defaultConfigName)
-
-	}
-
-	file, err := os.OpenFile(path, os.O_TRUNC|os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-
-	encoder := yaml.NewEncoder(file)
-	return encoder.Encode(&config)
-}
-
-func valueOrDefault(val, def string) string {
-	if val != "" {
-		return val
-	}
-
-	return def
-}
-
-func getDefaultConfigPath() string {
-	home, err := homedir.Dir()
-	if err != nil {
-		panic(err)
-	}
-
-	return filepath.Join(home, defaultConfigDir, defaultConfigName)
+func (t Topic) GetName() string {
+	return t.Name
 }

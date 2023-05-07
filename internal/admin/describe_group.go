@@ -87,6 +87,7 @@ func (a *Admin) DescribeGroup(ctx context.Context, group string) models.Group {
 
 func (a *Admin) fetchLastOffset(ctx context.Context, topic string, partition int) (models.Offset, error) {
 	cli := a.client()
+	// FIXME: выдает кривой hw. Надо использовать sarama
 	resp, err := cli.Fetch(ctx, &kafka.FetchRequest{
 		Topic:     topic,
 		Partition: partition,
@@ -99,5 +100,7 @@ func (a *Admin) fetchLastOffset(ctx context.Context, topic string, partition int
 	return models.Offset{
 		Partition:      int32(resp.Partition),
 		HightWatermark: resp.HighWatermark,
+		Offset:         resp.LastStableOffset,
+		LogStartOffset: resp.LogStartOffset,
 	}, nil
 }

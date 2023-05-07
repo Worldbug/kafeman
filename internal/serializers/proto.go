@@ -3,6 +3,7 @@ package serializers
 import (
 	"bytes"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -14,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func NewProtobufSerializer(importPaths []string, protoType string) (*ProtobufSerializer, error) {
-	reg, err := NewDescriptorRegistry(importPaths, []string{})
+func NewProtobufSerializer(importPaths, excludePath []string, protoType string) (*ProtobufSerializer, error) {
+	reg, err := NewDescriptorRegistry(importPaths, excludePath)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +93,25 @@ type DescriptorRegistry struct {
 }
 
 func NewDescriptorRegistry(importPaths []string, exclusions []string) (*DescriptorRegistry, error) {
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+
+	for i, path := range importPaths {
+		if path == "~" {
+			path = dir
+		}
+
+		if strings.HasPrefix(path, "~/") {
+			path = filepath.Join(dir, path[2:])
+		}
+
+		if strings.HasPrefix(path, "~") {
+			path = filepath.Join(dir, path[1:])
+		}
+
+		importPaths[i] = path
+	}
+
 	p := &protoparse.Parser{
 		ImportPaths: importPaths,
 	}

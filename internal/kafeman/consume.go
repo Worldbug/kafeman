@@ -5,16 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/internal/consumer"
 	"github.com/worldbug/kafeman/internal/logger"
 	"github.com/worldbug/kafeman/internal/models"
 )
-
-/*
-	1. Опционально падать при ошибке
-	2. Не выводить ошибок если такие были
-	3. Просто выводить ошибки но не падать
-*/
 
 type ConsumeCommand struct {
 	Topic          string
@@ -26,6 +21,7 @@ type ConsumeCommand struct {
 	WithMeta       bool
 	MessagesCount  int32
 	FromTime       time.Time
+	ToTime         time.Time
 	Decoder        Decoder
 }
 
@@ -42,11 +38,12 @@ func (k *kafeman) Consume(ctx context.Context, cmd ConsumeCommand, decoder Decod
 		cmd.CommitMessages,
 		cmd.Follow,
 		cmd.FromTime,
+		cmd.ToTime,
 	)
 
 	messages, err := c.StartConsume(ctx)
 	if err != nil {
-		return nil, ErrNoTopicProvided
+		return nil, errors.Wrap(err, "Start consume error:")
 	}
 
 	output := make(chan models.Message)

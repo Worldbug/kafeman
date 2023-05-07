@@ -19,14 +19,15 @@ type ReplicateCMD struct {
 	Partition   int32
 	Partitioner string
 
-	Partitions     []int32
-	CommitMessages bool
-	Offset         int64
-	Follow         bool
-	WithMeta       bool
-	MessagesCount  int32
-	FromTime       time.Time
-	ConsumerGroup  string
+	ConsumePartitions []int32
+	CommitMessages    bool
+	Offset            int64
+	Follow            bool
+	WithMeta          bool
+	MessagesCount     int32
+	FromTime          time.Time
+	ToTime            time.Time
+	ConsumerGroup     string
 }
 
 func (k *kafeman) Replicate(ctx context.Context, cmd ReplicateCMD) error {
@@ -60,12 +61,13 @@ func (k *kafeman) initReplicateConsumer(ctx context.Context, cmd ReplicateCMD) (
 		consumerConfig,
 		cmd.ConsumerGroup,
 		cmd.SourceTopic,
-		cmd.Partitions,
+		cmd.ConsumePartitions,
 		cmd.Offset,
 		cmd.MessagesCount,
 		cmd.CommitMessages,
 		cmd.Follow,
 		cmd.FromTime,
+		cmd.ToTime,
 	)
 
 	messages, err := c.StartConsume(ctx)

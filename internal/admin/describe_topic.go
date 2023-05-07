@@ -81,6 +81,8 @@ func (a *Admin) describeTopicPartitons(ctx context.Context, topic string) ([]mod
 			Leader:         partition.Leader,
 			Replicas:       len(partition.Replicas),
 			ISR:            partition.Isr,
+			LogEndOffset:   offsets.Offset,
+			LogStartOffset: offsets.LogStartOffset,
 		})
 	}
 

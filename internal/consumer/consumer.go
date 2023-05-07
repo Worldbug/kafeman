@@ -15,7 +15,7 @@ import (
 )
 
 func NewSaramaConsuemr(
-	config config.Config,
+	config *config.Configuration,
 	consumerGroupID string,
 	topic string,
 	partitions []int32,
@@ -24,6 +24,7 @@ func NewSaramaConsuemr(
 	commit bool,
 	follow bool,
 	fromTime time.Time,
+	toTime time.Time,
 ) *Consumer {
 	return &Consumer{
 		config:          config,
@@ -35,11 +36,12 @@ func NewSaramaConsuemr(
 		commit:          commit,
 		follow:          follow,
 		fromTime:        fromTime,
+		toTime:          toTime,
 	}
 }
 
 type Consumer struct {
-	config   config.Config
+	config   *config.Configuration
 	messages chan models.Message
 
 	consumerGroupID string
@@ -50,6 +52,7 @@ type Consumer struct {
 	commit          bool
 	follow          bool
 	fromTime        time.Time
+	toTime          time.Time
 }
 
 func (c *Consumer) StartConsume(ctx context.Context) (<-chan models.Message, error) {
@@ -98,7 +101,12 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 			offset := c.offset
 
 			if c.fromTime.UnixNano() != 0 {
-				offset = adm.GetOffsetByTime(ctx, partition, topic, c.fromTime)
+				timeBasedOffset, err := adm.GetOffsetByTime(ctx, partition, topic, c.fromTime)
+				if err != nil {
+					return
+				}
+
+				offset = timeBasedOffset
 			}
 
 			cp, e := consumer.ConsumePartition(topic, partition, offset)
@@ -117,12 +125,21 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 func (c *Consumer) asyncConsume(ctx context.Context, cp sarama.PartitionConsumer) error {
 	left := c.messagesLimit
 
+	// Do not read empty partition
+	if cp.HighWaterMarkOffset() == 0 && !c.follow && left == 0 {
+		return nil
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case msg, ok := <-cp.Messages():
 			if !ok {
+				return nil
+			}
+
+			if c.toTime.Unix() != 0 && msg.Timestamp.After(c.toTime) {
 				return nil
 			}
 
@@ -143,10 +160,8 @@ func (c *Consumer) asyncConsume(ctx context.Context, cp sarama.PartitionConsumer
 			if c.messagesLimit != 0 && left == 0 {
 				return nil
 			}
-
 		}
 	}
-
 }
 
 func (c *Consumer) getSaramaConfig() (*sarama.Config, error) {
@@ -156,6 +171,8 @@ func (c *Consumer) getSaramaConfig() (*sarama.Config, error) {
 	}
 
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.commit
+	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
+	saramaConfig.Consumer.Return.Errors = true
 
 	if c.offset == sarama.OffsetNewest || c.offset == sarama.OffsetOldest {
 		saramaConfig.Consumer.Offsets.Initial = c.offset
@@ -171,8 +188,6 @@ func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, er
 		return nil, err
 	}
 
-	topic := c.topic
-
 	// defer cg.close
 	cg, err := sarama.NewConsumerGroup(addrs, c.consumerGroupID, saramaConfig)
 	if err != nil {
@@ -185,14 +200,14 @@ func (c *Consumer) consumerGroup(ctx context.Context) (<-chan models.Message, er
 	}
 
 	if len(c.partitions) == 0 {
-		c.partitions, err = cli.Partitions(topic)
+		c.partitions, err = cli.Partitions(c.topic)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	c.messages = make(chan models.Message, len(c.partitions))
-	go cg.Consume(ctx, []string{topic}, c)
+	go cg.Consume(ctx, []string{c.topic}, c)
 
 	return c.messages, nil
 }
@@ -218,6 +233,10 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				continue
 			}
 
+			if c.toTime.Unix() != 0 && msg.Timestamp.After(c.toTime) {
+				return nil
+			}
+
 			c.messages <- models.MessageFromSarama(msg)
 
 			if !c.follow {
@@ -236,7 +255,6 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			if c.messagesLimit != 0 && left == 0 {
 				return nil
 			}
-
 		}
 	}
 }
