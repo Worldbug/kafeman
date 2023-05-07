@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/Shopify/sarama"
+	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/utils"
@@ -91,20 +93,29 @@ func (k *kafeman) DeleteGroup(group string) error {
 	return admin.NewAdmin(k.config).DeleteGroup(group)
 }
 
-func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []models.Offset) {
-	for _, p := range partitions {
-		r := kafka.NewReader(kafka.ReaderConfig{
-			GroupID:     group,
-			Brokers:     k.config.GetCurrentCluster().Brokers,
-			Topic:       topic,
-			StartOffset: kafka.FirstOffset,
-			Partition:   int(p.Partition),
-		})
+func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []models.Offset) error {
+	config := sarama.NewConfig()
 
-		msg, _ := r.FetchMessage(ctx)
-
-		msg.Offset = p.Offset
-		r.CommitMessages(ctx, msg)
-		r.Close()
+	client, err := sarama.NewClient(k.config.GetCurrentCluster().Brokers, config)
+	if err != nil {
+		return errors.Wrapf(err, "Error create client for group %s", group)
 	}
+
+	manager, err := sarama.NewOffsetManagerFromClient(group, client)
+	if err != nil {
+		return errors.Wrapf(err, "Error create offset manager for group %s", group)
+	}
+	defer manager.Close()
+
+	for _, p := range partitions {
+		partitionManager, err := manager.ManagePartition(topic, p.Partition)
+		if err != nil {
+			return errors.Wrapf(err, "Error manage partition %d", p.Partition)
+		}
+
+		partitionManager.MarkOffset(p.Offset, "")
+	}
+	manager.Commit()
+
+	return nil
 }
