@@ -40,4 +40,5 @@ type Offset struct {
 	Offset         int64 `json:"offset"`
 	HightWatermark int64 `json:"hight_watermark"`
 	Lag            int64 `json:"lag"`
+	LogStartOffset int64 `json:"log_start_offset"`
 }

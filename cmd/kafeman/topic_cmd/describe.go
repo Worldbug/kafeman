@@ -80,14 +80,14 @@ func (d *describeOptions) describeTopicPrint(topicInfo models.TopicInfo) {
 	w.Flush()
 
 	if !d.NoHeader {
-		fmt.Fprintf(w, "\tPartition\tHigh Watermark\tLeader\tReplicas\tISR\t\n")
-		fmt.Fprintf(w, "\t---------\t--------------\t------\t--------\t---\t\n")
+		fmt.Fprintf(w, "\tPartition\tLog start offset\tLog end offset\tHigh Watermark\tLeader\tReplicas\tISR\t\n")
+		fmt.Fprintf(w, "\t---------\t----------------\t--------------\t--------------\t------\t--------\t---\t\n")
 	}
 	sort.Slice(topicInfo.Partitions, func(i, j int) bool {
 		return topicInfo.Partitions[i].Partition < topicInfo.Partitions[j].Partition
 	})
 	for _, p := range topicInfo.Partitions {
-		fmt.Fprintf(w, "\t%v\t%v\t%v\t%v\t%v\t\n", p.Partition, p.HightWatermark, p.Leader, p.Replicas, p.ISR)
+		fmt.Fprintf(w, "\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t\n", p.Partition, p.LogStartOffset, p.LogEndOffset, p.HightWatermark, p.Leader, p.Replicas, p.ISR)
 	}
 	w.Flush()
 

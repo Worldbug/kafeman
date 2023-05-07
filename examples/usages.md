@@ -90,3 +90,12 @@ You can generate example of message and pass in vim for edit then produce to top
 ```sh
 kafeman example proto_topic | vim | kafeman produce proto_topic
 ```
+
+Set offsets for consumer group
+```sh
+kafeman group commit my_group -t my_topic \
+  --set 0=1024 \
+  --set 1=1000 \
+  --set 2=1000 \
+  --set 3=1599
+```

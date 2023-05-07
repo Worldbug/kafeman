@@ -80,7 +80,7 @@ func (g *groupCommitOptions) run(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if len(g.offsets) == 0 {
+	if len(offsets) == 0 {
 		t, err := k.GetTopicInfo(cmd.Context(), g.topic)
 		if err != nil {
 			common.ExitWithErr("%+v", err)

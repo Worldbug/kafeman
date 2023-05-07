@@ -28,6 +28,8 @@ type PartitionInfo struct {
 	Leader         int32   `json:"leader"`
 	Replicas       int     `json:"replicas"`
 	ISR            []int32 `json:"isr"`
+	LogEndOffset   int64   `json:"log_end_offset"`
+	LogStartOffset int64   `json:"log_start_offset"`
 }
 
 type TopicConfigRecord struct {

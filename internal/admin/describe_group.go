@@ -100,5 +100,7 @@ func (a *Admin) fetchLastOffset(ctx context.Context, topic string, partition int
 	return models.Offset{
 		Partition:      int32(resp.Partition),
 		HightWatermark: resp.HighWatermark,
+		Offset:         resp.LastStableOffset,
+		LogStartOffset: resp.LogStartOffset,
 	}, nil
 }
