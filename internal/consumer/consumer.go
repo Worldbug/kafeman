@@ -101,7 +101,12 @@ func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.
 			offset := c.offset
 
 			if c.fromTime.UnixNano() != 0 {
-				offset = adm.GetOffsetByTime(ctx, partition, topic, c.fromTime)
+				timeBasedOffset, err := adm.GetOffsetByTime(ctx, partition, topic, c.fromTime)
+				if err != nil {
+					return
+				}
+
+				offset = timeBasedOffset
 			}
 
 			cp, e := consumer.ConsumePartition(topic, partition, offset)
@@ -168,8 +173,6 @@ func (c *Consumer) getSaramaConfig() (*sarama.Config, error) {
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = c.commit
 	saramaConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
 	saramaConfig.Consumer.Return.Errors = true
-	saramaConfig.Consumer.Group.Session.Timeout = time.Second * 30
-	saramaConfig.Consumer.Group.Heartbeat.Interval = 10 * time.Second
 
 	if c.offset == sarama.OffsetNewest || c.offset == sarama.OffsetOldest {
 		saramaConfig.Consumer.Offsets.Initial = c.offset

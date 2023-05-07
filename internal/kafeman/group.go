@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/models"
+	"github.com/worldbug/kafeman/internal/sarama_config"
 	"github.com/worldbug/kafeman/internal/utils"
 
 	"github.com/segmentio/kafka-go"
@@ -93,29 +94,65 @@ func (k *kafeman) DeleteGroup(group string) error {
 	return admin.NewAdmin(k.config).DeleteGroup(group)
 }
 
-func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, partitions []models.Offset) error {
-	config := sarama.NewConfig()
+func (k *kafeman) SetGroupOffset(ctx context.Context, group, topic string, offsets []models.Offset) error {
+	config, err := sarama_config.GetSaramaFromConfig(k.config)
+	if err != nil {
+		return errors.Wrap(err, "Cant create sarama config")
+	}
 
 	client, err := sarama.NewClient(k.config.GetCurrentCluster().Brokers, config)
 	if err != nil {
 		return errors.Wrapf(err, "Error create client for group %s", group)
 	}
 
-	manager, err := sarama.NewOffsetManagerFromClient(group, client)
+	groupInfo := k.DescribeGroup(ctx, group)
+	_, ok := groupInfo.Offsets[topic]
+	if ok {
+		return errors.New("Group has active consumers on this topic")
+	}
+
+	cg, err := sarama.NewConsumerGroupFromClient(group, client)
 	if err != nil {
-		return errors.Wrapf(err, "Error create offset manager for group %s", group)
+		return errors.Wrap(err, "Cant create consumer group")
 	}
-	defer manager.Close()
+	defer cg.Close()
 
-	for _, p := range partitions {
-		partitionManager, err := manager.ManagePartition(topic, p.Partition)
-		if err != nil {
-			return errors.Wrapf(err, "Error manage partition %d", p.Partition)
-		}
-
-		partitionManager.MarkOffset(p.Offset, "")
+	err = cg.Consume(ctx, []string{topic}, newCommitConsumerGroup(offsets, topic))
+	if err != nil {
+		return errors.Wrap(err, "Cant consume")
 	}
-	manager.Commit()
 
+	return nil
+}
+
+func newCommitConsumerGroup(
+	offsets []models.Offset,
+	topic string,
+) *commitConsumerGroup {
+	return &commitConsumerGroup{
+		offsets: offsets,
+		topic:   topic,
+	}
+}
+
+type commitConsumerGroup struct {
+	offsets []models.Offset
+	topic   string
+}
+
+func (c *commitConsumerGroup) Setup(session sarama.ConsumerGroupSession) error {
+	for _, o := range c.offsets {
+		session.MarkOffset(c.topic, o.Partition, o.Offset, "")
+		session.ResetOffset(c.topic, o.Partition, o.Offset, "")
+	}
+
+	return nil
+}
+
+func (c *commitConsumerGroup) Cleanup(sarama.ConsumerGroupSession) error {
+	return nil
+}
+
+func (c *commitConsumerGroup) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	return nil
 }

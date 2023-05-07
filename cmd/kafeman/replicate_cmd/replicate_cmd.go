@@ -98,9 +98,9 @@ func NewReplicateCMD() *cobra.Command {
 	cmd.Flags().BoolVar(&options.printMeta, "meta", false, "Print with meta info (marshal into json)")
 	cmd.Flags().Int32SliceVarP(&options.consumePartitions, "consume-partitions", "p", []int32{}, "Partitions to consume")
 	cmd.Flags().Int32VarP(&options.messagesCount, "tail", "n", 0, "Print last n messages per partition")
-	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time (format 2022-10-30T00:00:00)")
+	cmd.Flags().StringVar(&options.fromAt, "from", "", "Consume messages earlier time in UTC (2023-05-09T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("from", completion_cmd.NewTimeCompletion())
-	cmd.Flags().StringVar(&options.toAt, "to", "", "Consume messages until the specified time (format 2022-10-30T00:00:00)")
+	cmd.Flags().StringVar(&options.toAt, "to", "", "Consume messages until the specified time in UTC (2023-05-09T00:00:00)")
 	cmd.RegisterFlagCompletionFunc("to", completion_cmd.NewTimeCompletion())
 
 	cmd.Flags().StringVar(&options.partitioner, "partitioner", "", "Select partitioner: [jvm|rand|rr|hash]")

@@ -23,21 +23,6 @@ type Admin struct {
 	config *config.Configuration
 }
 
-func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic string, ts time.Time) int64 {
-	reader := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: a.config.GetCurrentCluster().Brokers,
-		Topic:   topic,
-	})
-
-	err := reader.SetOffsetAt(ctx, ts)
-	if err != nil {
-		return -1
-	}
-
-	return reader.Offset()
-
-}
-
 func (a *Admin) client() kafka.Client {
 	return kafka.Client{
 		Addr:    kafka.TCP(a.config.GetCurrentCluster().Brokers...),

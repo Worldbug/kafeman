@@ -94,5 +94,5 @@ func ParseTime(str string) time.Time {
 		return time.Unix(0, 0)
 	}
 
-	return t.UTC()
+	return t
 }
