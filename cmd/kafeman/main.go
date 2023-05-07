@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/worldbug/kafeman/cmd/kafeman/cluster_cmd"
 	"github.com/worldbug/kafeman/cmd/kafeman/common"
 	"github.com/worldbug/kafeman/cmd/kafeman/completion_cmd"
 	"github.com/worldbug/kafeman/cmd/kafeman/config_cmd"
@@ -32,6 +33,7 @@ func app() *cobra.Command {
 	kafeman.AddCommand(topic_cmd.NewTopicCMD())
 	kafeman.AddCommand(alias(topic_cmd.NewLSTopicsCMD(), "topics"))
 	kafeman.AddCommand(replicate_cmd.NewReplicateCMD())
+	kafeman.AddCommand(cluster_cmd.NewClusterCMD())
 
 	return kafeman
 }
