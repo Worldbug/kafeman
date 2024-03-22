@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/worldbug/kafeman/internal/config"
 	"github.com/worldbug/kafeman/internal/logger"
 	"golang.org/x/oauth2"
@@ -41,7 +41,7 @@ type tokenProvider struct {
 
 func newTokenProvider(cluster config.Cluster) *tokenProvider {
 	once.Do(func() {
-		//token either from tokenURL or static
+		// token either from tokenURL or static
 		if len(cluster.SASL.Token) != 0 {
 			tokenProv = &tokenProvider{
 				oauthClientCFG: &clientcredentials.Config{},
@@ -80,13 +80,11 @@ func newTokenProvider(cluster config.Cluster) *tokenProvider {
 }
 
 func (tp *tokenProvider) Token() (*sarama.AccessToken, error) {
-
 	if !tp.staticToken {
 		if time.Now().After(tp.replaceAt) {
 			if err := tp.refreshToken(); err != nil {
 				return nil, err
 			}
-
 		}
 	}
 	return &sarama.AccessToken{

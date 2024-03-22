@@ -7,7 +7,7 @@ import (
 	"github.com/worldbug/kafeman/internal/models"
 	"github.com/worldbug/kafeman/internal/utils"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicInfo, error) {
@@ -23,7 +23,6 @@ func (a *Admin) DescribeTopic(ctx context.Context, topic string) (models.TopicIn
 			Type: sarama.TopicResource,
 			Name: topic,
 		})
-
 	if err != nil {
 		return topicInfo, err
 	}
@@ -88,6 +87,7 @@ func (a *Admin) describeTopicPartitons(ctx context.Context, topic string) ([]mod
 
 	return partitonsInfo, nil
 }
+
 func (a *Admin) GetTopicConsumers(ctx context.Context, topic string) ([]models.TopicConsumerInfo, error) {
 	consumersList := make([]models.TopicConsumerInfo, 0)
 	groupsList, err := a.GetGroupsList(ctx)
@@ -113,8 +113,7 @@ func (a *Admin) GetTopicConsumers(ctx context.Context, topic string) ([]models.T
 	}
 
 	for _, consumer := range consumers {
-		consumersList =
-			append(consumersList, *consumer)
+		consumersList = append(consumersList, *consumer)
 	}
 
 	return consumersList, nil

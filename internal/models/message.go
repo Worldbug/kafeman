@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type Message struct {

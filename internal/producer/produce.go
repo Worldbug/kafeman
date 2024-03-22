@@ -8,7 +8,7 @@ import (
 	"github.com/worldbug/kafeman/internal/sarama_config"
 	"github.com/worldbug/kafeman/internal/utils"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type Message struct {
@@ -84,7 +84,6 @@ func getSaramaConfig(
 	partitioner string,
 	partition int32,
 ) (*sarama.Config, error) {
-
 	saramaConfig, err := sarama_config.GetSaramaFromConfig(conf)
 	if err != nil {
 		return nil, err

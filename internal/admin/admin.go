@@ -8,7 +8,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/config"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/segmentio/kafka-go"
 	"github.com/worldbug/kafeman/internal/sarama_config"
 )
@@ -40,6 +40,7 @@ func (a *Admin) conn() (*kafka.Conn, error) {
 
 	return kafka.Dial("tcp", a.config.GetCurrentCluster().Brokers[0])
 }
+
 func (a *Admin) getSaramaAdmin() (sarama.ClusterAdmin, error) {
 	var admin sarama.ClusterAdmin
 	saramaConfig, err := sarama_config.GetSaramaFromConfig(a.config)

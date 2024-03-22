@@ -3,8 +3,8 @@ module github.com/worldbug/kafeman
 go 1.22
 
 require (
+	github.com/IBM/sarama v1.43.0
 	github.com/Landoop/schema-registry v0.0.0-20190327143759-50a5701c1891
-	github.com/Shopify/sarama v1.38.1
 	github.com/golang/protobuf v1.5.4
 	github.com/jhump/protoreflect v1.15.6
 	github.com/linkedin/goavro/v2 v2.12.0

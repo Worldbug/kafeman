@@ -3,7 +3,7 @@ package admin
 import (
 	"context"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func (a *Admin) DeleteTopic(ctx context.Context, topic string) error {

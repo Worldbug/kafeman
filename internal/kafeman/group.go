@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/internal/admin"
 	"github.com/worldbug/kafeman/internal/models"
@@ -39,7 +39,6 @@ func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]Gro
 			groups, err := cli.DescribeGroups(ctx, &kafka.DescribeGroupsRequest{
 				GroupIDs: batch,
 			})
-
 			if err != nil {
 				for _, name := range batch {
 					describe = append(describe, GroupInfo{
@@ -47,7 +46,6 @@ func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]Gro
 						State:     "Empty",
 						Consumers: 0,
 					})
-
 				}
 				return
 			}
@@ -61,7 +59,6 @@ func (k *kafeman) DescribeGroups(ctx context.Context, groupList []string) ([]Gro
 				})
 			}
 			m.Unlock()
-
 		}(b, m, wg)
 	}
 
