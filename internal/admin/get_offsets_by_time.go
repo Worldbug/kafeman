@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
@@ -57,5 +57,4 @@ func (a *Admin) GetOffsetByTime(ctx context.Context, partition int32, topic stri
 	}
 
 	return offset, nil
-
 }

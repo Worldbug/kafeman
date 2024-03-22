@@ -2,7 +2,7 @@
 ![kafeman_logo](logo/logo.svg)
 
 kaf inspired cli for kafka management
-* Optimizations for fast performance in large kafka clusters
+* Optimizations for better performance in large kafka clusters
 * Simplified work with proto in topics
 * Alternative output in json format
 * Work not only with offsets but also with timestamps

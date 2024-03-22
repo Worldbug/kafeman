@@ -10,7 +10,7 @@ import (
 
 	"github.com/worldbug/kafeman/internal/models"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/worldbug/kafeman/internal/sarama_config"
 )
 
@@ -87,7 +87,6 @@ func (c *Consumer) consumer(ctx context.Context) (<-chan models.Message, error) 
 	go c.asyncConsumersWorkGroup(ctx, consumer, c.topic, c.partitions)
 
 	return c.messages, nil
-
 }
 
 func (c *Consumer) asyncConsumersWorkGroup(ctx context.Context, consumer sarama.Consumer, topic string, partitions []int32) {

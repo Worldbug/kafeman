@@ -3,7 +3,7 @@ package admin
 import (
 	"context"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/cmd/kafeman/run_configuration"
 	"github.com/worldbug/kafeman/internal/models"

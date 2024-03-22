@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"os"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/pkg/errors"
 	"github.com/worldbug/kafeman/internal/config"
 )
